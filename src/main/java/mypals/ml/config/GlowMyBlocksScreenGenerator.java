@@ -5,13 +5,11 @@ import dev.isxander.yacl3.api.controller.*;
 import mypals.ml.GlowMyBlocks;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
 import java.util.ArrayList;
 
-public class ScreenGenerator {
+public class GlowMyBlocksScreenGenerator {
     public static Screen getConfigScreen(Screen screen){
         var instance = GlowMyBlocksConfig.CONFIG_HANDLER;
         return YetAnotherConfigLib.createBuilder()

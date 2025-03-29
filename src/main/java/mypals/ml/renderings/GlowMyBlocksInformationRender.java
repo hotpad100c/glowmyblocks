@@ -11,8 +11,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Vector2d;
 
 import java.awt.*;
 import java.util.List;
@@ -24,7 +22,7 @@ import static mypals.ml.wandSystem.SelectedManager.wand;
 import static mypals.ml.wandSystem.WandActionsManager.deleteMode;
 import static mypals.ml.wandSystem.WandActionsManager.getAreasToDelete;
 
-public class InformationRender {
+public class GlowMyBlocksInformationRender {
     public static double lastTickPosX = 0;
     public static double lastTickPosY = 0;
     public static double lastTickPosZ = 0;

@@ -7,6 +7,6 @@ public class GlowMyBlocksModMenuIntegration implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
 
-        return ScreenGenerator::getConfigScreen;
+        return GlowMyBlocksScreenGenerator::getConfigScreen;
     }
 }

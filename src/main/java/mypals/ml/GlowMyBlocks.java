@@ -2,7 +2,7 @@ package mypals.ml;
 
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.config.GlowMyBlocksConfig;
-import mypals.ml.config.Keybinds;
+import mypals.ml.config.GlowMyBlocksKeybinds;
 import mypals.ml.wandSystem.WandTooltipRenderer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -31,7 +31,7 @@ public class GlowMyBlocks implements ModInitializer {
 	}
 	@Override
 	public void onInitialize() {
-		Keybinds.init();
+		GlowMyBlocksKeybinds.init();
 		HudRenderCallback.EVENT.register((context, tickDelta) -> {
 			WandTooltipRenderer.renderWandTooltip(context);
 		});

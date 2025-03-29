@@ -4,7 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ItemMixin",
-    "WorldRenderMixin"
+    "GlowMyBlocksWorldRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

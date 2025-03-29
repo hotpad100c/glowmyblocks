@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static mypals.ml.GlowMyBlocks.MOD_ID;
-import static mypals.ml.config.Keybinds.*;
+import static mypals.ml.config.GlowMyBlocksKeybinds.*;
 import static mypals.ml.config.GlowMyBlocksConfig.selectInSpectator;
 import static mypals.ml.wandSystem.WandActionsManager.pos1;
 import static mypals.ml.wandSystem.WandActionsManager.pos2;
@@ -47,13 +47,13 @@ public class WandTooltipRenderer {
         TriConsumer<KeyBinding,Color ,String> addKeyTooltip = (key,color, icon) ->
                 addTooltip.accept(Text.translatable(key.getTranslationKey()).getString() + "(" + key.getBoundKeyLocalizedText().getString() + ")", color, icon);
 
-        if (addArea.isPressed()) {
-            addKeyTooltip.accept(addArea, new Color(200, 255, 200, 200),"textures/gui/hotkey.png");
+        if (addOutlineArea.isPressed()) {
+            addKeyTooltip.accept(addOutlineArea, new Color(200, 255, 200, 200),"textures/gui/hotkey.png");
             if (pos1 != null && pos2 != null) {
                 addTooltip.accept("config.wand.addArea", new Color(255, 255, 255, 200), "textures/gui/mouse_left.png");
             }
-        } else if (deleteArea.isPressed()) {
-            addKeyTooltip.accept(deleteArea,new Color(200, 255, 200, 200), "textures/gui/hotkey.png");
+        } else if (deleteOutlineArea.isPressed()) {
+            addKeyTooltip.accept(deleteOutlineArea,new Color(200, 255, 200, 200), "textures/gui/hotkey.png");
             addTooltip.accept("config.wand.delete", new Color(255, 180, 180, 200), "textures/gui/mouse_right.png");
             if (pos1 != null && pos2 != null) {
                 addTooltip.accept("config.wand.cut", new Color(255, 200, 200, 200), "textures/gui/mouse_left.png");
@@ -66,11 +66,11 @@ public class WandTooltipRenderer {
                 addTooltip.accept("config.wand.selectP2", new Color(255, 255, 255, 200), "textures/gui/mouse_right.png");
             }
             if (pos1 != null && pos2 != null) {
-                if (!addArea.isPressed()) {
-                    addKeyTooltip.accept(addArea, new Color(255, 255, 255, 200),"textures/gui/hotkey.png");
+                if (!addOutlineArea.isPressed()) {
+                    addKeyTooltip.accept(addOutlineArea, new Color(255, 255, 255, 200),"textures/gui/hotkey.png");
                 }
-                if (!deleteArea.isPressed()) {
-                    addKeyTooltip.accept(deleteArea, new Color(255, 255, 255, 200),"textures/gui/hotkey.png");
+                if (!deleteOutlineArea.isPressed()) {
+                    addKeyTooltip.accept(deleteOutlineArea, new Color(255, 255, 255, 200),"textures/gui/hotkey.png");
                 }
             }
         }
