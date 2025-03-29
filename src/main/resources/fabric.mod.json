@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "glowmyblocks",
+	"version": "${version}",
+	"name": "GlowMyBlocks",
+	"description": "Let your blocks glow!",
+	"authors": [
+		"Ryan100c"
+	],
+	"contact": {
+		"homepage": "",
+		"sources": ""
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/glowmyblocks/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"mypals.ml.GlowMyBlocks"
+		],"modmenu": [
+			"mypals.ml.config.GlowMyBlocksModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"glowmyblocks.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"accessWidener": "glowmyblocks.accesswidener",
+	"suggests": {
+		"another-mod": "*"
+	}
+}

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "mypals.ml.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemMixin",
+    "WorldRenderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+	}
+}
