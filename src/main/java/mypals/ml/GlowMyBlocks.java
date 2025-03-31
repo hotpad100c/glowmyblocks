@@ -3,6 +3,7 @@ package mypals.ml;
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.config.GlowMyBlocksConfig;
 import mypals.ml.config.GlowMyBlocksKeybinds;
+import mypals.ml.config.GlowMyBlocksScreenGenerator;
 import mypals.ml.wandSystem.WandTooltipRenderer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -11,11 +12,12 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static mypals.ml.config.GlowMyBlocksKeybinds.openConfigKey;
 import static mypals.ml.wandSystem.SelectedManager.*;
 import static mypals.ml.wandSystem.WandActionsManager.wandActions;
 
@@ -46,6 +48,9 @@ public class GlowMyBlocks implements ModInitializer {
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
 			wandActions(client);
+			while (openConfigKey.wasPressed()) {
+				client.setScreen(GlowMyBlocksScreenGenerator.getConfigScreen(client.currentScreen));
+			}
 		});
 		UseBlockCallback.EVENT.register((player, world, hand, pos) -> {
 			if (world.isClient && player.getStackInHand(hand).getItem() == wand && player.isCreative()) {
@@ -61,7 +66,6 @@ public class GlowMyBlocks implements ModInitializer {
 		});
 	}
 	public static void onConfigUpdated() {
-		MinecraftClient client = MinecraftClient.getInstance();
 		try {
 			updateConfig();
 		}catch (Exception e){
