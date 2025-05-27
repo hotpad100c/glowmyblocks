@@ -65,7 +65,7 @@ public class SelectedManager {
 
         Color color = Color.white;
         try{
-            int c = Integer.parseInt(colorString);
+            int c = Integer.decode(colorString);
             color = new Color(c);
         } catch (NumberFormatException e) {
             throw new RuntimeException(e);
