@@ -52,8 +52,7 @@ public class WandActionsManager {
         if (pos1 != null && pos2 !=null) {
             GlowMyBlocksConfig.CONFIG_HANDLER.instance();
             String hex = String.format("#%06X", areaColor.getRGB());
-            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":")
-                    + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" +hex);
+            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":" + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" + hex);
             GlowMyBlocksConfig.CONFIG_HANDLER.save();
             onConfigUpdated();
             pos1 = null;
