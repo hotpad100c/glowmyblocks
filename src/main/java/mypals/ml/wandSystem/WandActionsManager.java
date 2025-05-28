@@ -51,8 +51,9 @@ public class WandActionsManager {
     public static void addAreaAction(BlockPos pos, Hand hand, PlayerEntity player, World world) {
         if (pos1 != null && pos2 !=null) {
             GlowMyBlocksConfig.CONFIG_HANDLER.instance();
-            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":"
-                    + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" + areaColor.getRGB());
+            String hex = String.format("#%08X", areaColor.getRGB())
+            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":"+hex)
+                    + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" + ;
             GlowMyBlocksConfig.CONFIG_HANDLER.save();
             onConfigUpdated();
             pos1 = null;
