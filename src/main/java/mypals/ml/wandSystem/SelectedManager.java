@@ -94,7 +94,7 @@ public class SelectedManager {
             return new AreaBox(
                     new BlockPos(0, 0, 0),
                     new BlockPos(0, 0, 0)
-                    ,-1,0.2f,false
+                    ,Color.white,0.2f,false
             );
         }
     }
