@@ -68,11 +68,11 @@ public class SelectedManager {
             int c = Integer.decode(colorString);
             color = new Color(c);
         } catch (NumberFormatException e) {
-            throw new RuntimeException(e);
+            System.err.println("Failed to parse color: " + colorString);
         }
 
         if (startCoords.length != 3 || endCoords.length != 3) {
-            throw new IllegalArgumentException("Invalid coordinates. Expected x1,y1,z1:x2,y2,z2:color");
+            System.err.println("Invalid coordinates. Expected x1,y1,z1:x2,y2,z2:color");
         }
 
         try {
@@ -90,7 +90,7 @@ public class SelectedManager {
                     ,color,0.2f,false
             );
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid number format in input: " + areaString, e);
+            System.err.println("Invalid number format in input: " + areaString);
         }
     }
     public static boolean isInsideArea(Vec3d pos, AreaBox areaBox){
