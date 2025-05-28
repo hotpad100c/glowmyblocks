@@ -91,6 +91,11 @@ public class SelectedManager {
             );
         } catch (NumberFormatException e) {
             System.err.println("Invalid number format in input: " + areaString);
+            return new AreaBox(
+                    new BlockPos(0, 0, 0),
+                    new BlockPos(0, 0, 0)
+                    ,-1,0.2f,false
+            );
         }
     }
     public static boolean isInsideArea(Vec3d pos, AreaBox areaBox){
