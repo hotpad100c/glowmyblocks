@@ -51,9 +51,9 @@ public class WandActionsManager {
     public static void addAreaAction(BlockPos pos, Hand hand, PlayerEntity player, World world) {
         if (pos1 != null && pos2 !=null) {
             GlowMyBlocksConfig.CONFIG_HANDLER.instance();
-            String hex = String.format("#%06X", areaColor.getRGB())
-            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":"+hex)
-                    + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" + ;
+            String hex = String.format("#%06X", areaColor.getRGB());
+            GlowMyBlocksConfig.selectedAreasSaved.add(pos1.getX() + "," + pos1.getY() + "," + pos1.getZ() + ":")
+                    + pos2.getX() + "," + pos2.getY() + "," + pos2.getZ() + ":" +hex;
             GlowMyBlocksConfig.CONFIG_HANDLER.save();
             onConfigUpdated();
             pos1 = null;
@@ -83,7 +83,7 @@ public class WandActionsManager {
             if(deletedSomething.get()){
                 remainingBoxes.forEach(box->{
 
-                    String hex = String.format("#%06X", box.color.getRGB())
+                    String hex = String.format("#%06X", box.color.getRGB());
 
                     GlowMyBlocksConfig.selectedAreasSaved.add(box.minPos.getX() + "," + box.minPos.getY() + "," + box.minPos.getZ() + ":"
                             + box.maxPos.getX() + "," + box.maxPos.getY() + "," + box.maxPos.getZ() + ":" + hex);
