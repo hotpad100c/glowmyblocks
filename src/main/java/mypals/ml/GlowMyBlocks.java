@@ -12,6 +12,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -23,7 +25,7 @@ import static mypals.ml.wandSystem.WandActionsManager.wandActions;
 
 public class GlowMyBlocks implements ModInitializer {
 	public static final String MOD_ID = "glowmyblocks";
-
+	private static boolean needRebuildOutlineMesh = false;
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -31,9 +33,18 @@ public class GlowMyBlocks implements ModInitializer {
 	public static Identifier id(String path) {
 		return Identifier.of(MOD_ID, path);
 	}
+	public static void renderOutlinesAfterEntity(MatrixStack stack, RenderTickCounter counter) {
+		OutlineManager.resolveBlocks();
+		if(needRebuildOutlineMesh) {
+			OutlineManager.buildMesh(stack,counter);
+			needRebuildOutlineMesh = false;
+		}
+		OutlineManager.onRenderWorldLast(stack,counter);
+	}
 	@Override
 	public void onInitialize() {
 		GlowMyBlocksKeybinds.init();
+		needRebuildOutlineMesh = true;
 		HudRenderCallback.EVENT.register((context, tickDelta) -> {
 			WandTooltipRenderer.renderWandTooltip(context);
 		});
@@ -41,9 +52,7 @@ public class GlowMyBlocks implements ModInitializer {
 			updateConfig();
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
-			OutlineManager.resolveBlocks();
-			OutlineManager.init();
-			OutlineManager.onRenderWorldLast(context);
+
 
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
@@ -77,6 +86,7 @@ public class GlowMyBlocks implements ModInitializer {
 		var instance = GlowMyBlocksConfig.CONFIG_HANDLER;
 		instance.load();
 		resolveSettings();
+		needRebuildOutlineMesh = true;
 	}
 	private static void resolveSettings(){
 		resolveSelectedAreasFromString(GlowMyBlocksConfig.selectedAreasSaved);

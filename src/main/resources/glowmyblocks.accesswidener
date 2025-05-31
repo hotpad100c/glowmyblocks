@@ -1,2 +1,4 @@
 accessWidener v2 named
+accessible field net/minecraft/client/render/WorldRenderer entityOutlinesFramebuffer Lnet/minecraft/client/gl/Framebuffer;
+accessible field net/minecraft/client/gl/VertexBuffer drawMode Lnet/minecraft/client/render/VertexFormat$DrawMode;
 accessible field net/minecraft/client/render/WorldRenderer bufferBuilders Lnet/minecraft/client/render/BufferBuilderStorage;

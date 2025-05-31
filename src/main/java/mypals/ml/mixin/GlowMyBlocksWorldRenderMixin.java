@@ -1,6 +1,7 @@
 package mypals.ml.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import mypals.ml.GlowMyBlocks;
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.renderings.GlowMyBlocksInformationRender;
 import net.minecraft.client.render.RenderTickCounter;
@@ -34,5 +35,13 @@ public class GlowMyBlocksWorldRenderMixin {
 						@Local(argsOnly = true) RenderTickCounter tickCounter
 	) {
 		GlowMyBlocksInformationRender.render(matrixStack,tickCounter);
+	}
+	@Inject(method = "render", at = @At(value = "INVOKE",
+			target = "Lnet/minecraft/client/gl/PostEffectProcessor;render(F)V", ordinal = 0))
+	private void blockOutline$bilt(CallbackInfo ci,
+									 @Local MatrixStack matrixStack,
+									 @Local(argsOnly = true) RenderTickCounter tickCounter
+	) {
+		GlowMyBlocks.renderOutlinesAfterEntity(matrixStack,tickCounter);
 	}
 }
