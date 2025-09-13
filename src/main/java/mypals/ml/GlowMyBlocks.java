@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
@@ -34,11 +35,18 @@ public class GlowMyBlocks implements ModInitializer {
 	public static Identifier id(String path) {
 		return Identifier.of(MOD_ID, path);
 	}
-	public static void renderOutlinesAfterEntity(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
+	public static void renderBlockOutlines(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
 		if(needRebuildOutlineMesh) {
-			OutlineManager.buildMesh(stack, counter);
+			OutlineManager.buildMeshes(counter);
 		}
-		OutlineManager.onRenderWorldLast(stack,counter, projectionMatrix);
+		OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
+		OutlineManager.renderBlocks(stack,counter, projectionMatrix);
+	}
+	public static void renderBlockEntitiesOutlines(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
+		if(needRebuildOutlineMesh) {
+			OutlineManager.buildMeshes(counter);
+		}
+		//OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
 	}
 	@Override
 	public void onInitialize() {
@@ -51,7 +59,7 @@ public class GlowMyBlocks implements ModInitializer {
 			updateConfig();
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
-			renderOutlinesAfterEntity(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
+			renderBlockOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
 			wandActions(client);

@@ -13,30 +13,30 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
-import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.lwjgl.opengl.GL15;
 
 import java.awt.*;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 import static net.minecraft.client.render.RenderPhase.*;
 
 public class OutlineManager {
+
     public static Map<BlockPos, Color> blockToRenderer = new HashMap<>();
     public static ArrayList<BlockPos> targetedBlocks = new ArrayList<>();
-    public static VertexBuffer vertexBuffer = null;
-    public static Map<BlockPos, Color> blockEntityList = new HashMap<>();
+
+    public static Map<AreaBox, AreaRenderData> areaVbos = new ConcurrentHashMap<>();
+
+    public static class AreaRenderData {
+        public VertexBuffer vbo;
+        public Map<BlockPos, Color> blockEntities = new HashMap<>();
+    }
 
     private static final RenderPhase.Transparency STO = new RenderPhase.Transparency(
             "sto",
@@ -52,6 +52,7 @@ public class OutlineManager {
                 RenderSystem.defaultBlendFunc();
             }
     );
+
     private static final RenderLayer GLOWING_OUTLINE_RENDER = RenderLayer.of(
             "block_glow_outline",
             VertexFormats.POSITION_COLOR,
@@ -69,90 +70,139 @@ public class OutlineManager {
                     .build(true)
     );
 
-    public static void buildMesh(MatrixStack stack1, RenderTickCounter counter) {
-        MatrixStack stack = new MatrixStack();
+    public static void buildMeshes(RenderTickCounter counter) {
         if (selectedAreas.isEmpty() && blockToRenderer.isEmpty()) {
             return;
         }
 
-        blockEntityList.clear();
-
-        Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
-        float delta = counter.getTickDelta(false);
-
-
-        BufferBuilder buffer = Tessellator.getInstance().begin(
-                GLOWING_OUTLINE_RENDER.getDrawMode(), GLOWING_OUTLINE_RENDER.getVertexFormat());
+        for (AreaRenderData data : areaVbos.values()) {
+            if (data.vbo != null) data.vbo.close();
+        }
+        areaVbos.clear();
 
         World world = MinecraftClient.getInstance().world;
-        for (AreaBox selectedArea : selectedAreas) {
-            for (int x = selectedArea.minPos.getX(); x <= selectedArea.maxPos.getX(); x++) {
-                for (int y = selectedArea.minPos.getY(); y <= selectedArea.maxPos.getY(); y++) {
-                    for (int z = selectedArea.minPos.getZ(); z <= selectedArea.maxPos.getZ(); z++) {
-                        BlockPos blockPos = new BlockPos(x, y, z);
-                        if(world == null) {
-                            return;
-                        }
-                        BlockState state = world.getBlockState(blockPos);
-                        if(state.isAir()){
-                            continue;
-                        }
-                        for(Direction direction : Direction.values()) {
-                            BlockPos offsetPos = blockPos.offset(direction);
-                            if (!world.getBlockState(offsetPos).isSideSolidFullSquare(world, offsetPos, direction.getOpposite())) {
-                                double x1 = blockPos.getX();
-                                double y1 = blockPos.getY();
-                                double z1 = blockPos.getZ();
+        if (world == null) return;
 
-                                stack.push();
-                                stack.translate(x1, y1 , z1 );
+        float delta = counter.getTickDelta(false);
 
-                                onRenderOutline(new HashMap.SimpleEntry<>(blockPos,
-                                                MinecraftClient.getInstance().world.getBlockState(blockPos)),
-                                        delta, camera, stack, selectedArea.color, buffer);
-                                stack.pop();
-                                break;
-                            }
+        for (AreaBox area : selectedAreas) {
+            AreaRenderData renderData = new AreaRenderData();
+            renderData.vbo = buildMeshForArea(area, delta);
+            renderData.blockEntities = collectBlockEntitiesForArea(area);
+            areaVbos.put(area, renderData);
+        }
+
+        GlowMyBlocks.needRebuildOutlineMesh = false;
+    }
+
+    private static VertexBuffer buildMeshForArea(AreaBox area, float delta) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        Camera camera = mc.gameRenderer.getCamera();
+        World world = mc.world;
+        if (world == null) return null;
+
+        BufferBuilder buffer = Tessellator.getInstance().begin(
+                GLOWING_OUTLINE_RENDER.getDrawMode(),
+                GLOWING_OUTLINE_RENDER.getVertexFormat()
+        );
+
+        for (int x = area.minPos.getX(); x <= area.maxPos.getX(); x++) {
+            for (int y = area.minPos.getY(); y <= area.maxPos.getY(); y++) {
+                for (int z = area.minPos.getZ(); z <= area.maxPos.getZ(); z++) {
+                    BlockPos blockPos = new BlockPos(x, y, z);
+                    BlockState state = world.getBlockState(blockPos);
+                    if (state.isAir()) continue;
+
+                    for (Direction direction : Direction.values()) {
+                        BlockPos offsetPos = blockPos.offset(direction);
+                        boolean isFullyBlocked = !world.getBlockState(offsetPos).isSideSolidFullSquare(world, offsetPos, direction.getOpposite())
+                                && isBlockInsideArea(offsetPos, area);
+                        if (!isFullyBlocked) {
+                            MatrixStack stack = new MatrixStack();
+                            stack.translate(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+                            renderBlockOutline(new AbstractMap.SimpleEntry<>(blockPos, state),
+                                    delta, camera, stack, area.color, buffer);
+                            break;
                         }
                     }
                 }
             }
         }
-        if (vertexBuffer != null) vertexBuffer.close();
 
         BuiltBuffer builtBuffer = buffer.endNullable();
-        if(builtBuffer != null){
-            vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
-            vertexBuffer.bind();
-            vertexBuffer.upload(builtBuffer);
-            VertexBuffer.unbind();
+        if (builtBuffer == null) return null;
 
-            GlowMyBlocks.needRebuildOutlineMesh = false;
+        VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+        vbo.bind();
+        vbo.upload(builtBuffer);
+        VertexBuffer.unbind();
+        return vbo;
+    }
+    private static Map<BlockPos, Color> collectBlockEntitiesForArea(AreaBox area) {
+        Map<BlockPos, Color> blockEntities = new HashMap<>();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        World world = mc.world;
+        if (world == null) return blockEntities;
+
+        for (int x = area.minPos.getX(); x <= area.maxPos.getX(); x++) {
+            for (int y = area.minPos.getY(); y <= area.maxPos.getY(); y++) {
+                for (int z = area.minPos.getZ(); z <= area.maxPos.getZ(); z++) {
+                    BlockPos blockPos = new BlockPos(x, y, z);
+                    BlockState state = world.getBlockState(blockPos);
+                    if (state.getBlock() instanceof BlockWithEntity) {
+                        BlockEntity blockEntity = world.getBlockEntity(blockPos);
+                        if (blockEntity != null) {
+                            blockEntities.put(blockEntity.getPos(), area.color);
+                        }
+                    }
+                }
+            }
         }
+        return blockEntities;
     }
 
-    public static void onRenderWorldLast(MatrixStack stack, RenderTickCounter counter,  Matrix4f projectionMatrix) {
+    public static void renderBlocks(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
         if (selectedAreas.isEmpty() && blockToRenderer.isEmpty()) {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
         Camera camera = mc.gameRenderer.getCamera();
-        BlockEntityRenderDispatcher blockEntityRenderer = mc.getBlockEntityRenderDispatcher();
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        OutlineVertexConsumerProvider outlineVertexConsumerProvider = mc.worldRenderer.bufferBuilders.getOutlineVertexConsumers();
-        float delta = counter.getTickDelta(false);
 
-        if (vertexBuffer == null || vertexBuffer.drawMode == null || selectedAreas.isEmpty()) return;
+        Vec3d cameraPos = camera.getPos();
 
+        for (AreaRenderData data : areaVbos.values()) {
+            if (data.vbo != null) {
+                renderAreaVbo(data.vbo, projectionMatrix, cameraPos);
+            }
+        }
+    }
+    public static void renderBlockEntities(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
+        if (selectedAreas.isEmpty() && blockToRenderer.isEmpty()) {
+            return;
+        }
+        MinecraftClient mc = MinecraftClient.getInstance();
+        Camera camera = mc.gameRenderer.getCamera();
 
-        vertexBuffer.bind();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Vec3d cameraPos = camera.getPos();
 
+        for (AreaRenderData data : areaVbos.values()) {
+            if (!data.blockEntities.isEmpty()) {
+                renderAreaBlockEntities(stack, data.blockEntities, counter, cameraPos);
+            }
+        }
+    }
+    private static void renderAreaVbo(VertexBuffer vbo, Matrix4f projectionMatrix, Vec3d cameraPos) {
+        vbo.bind();
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().translate(
                 (float) -cameraPos.x,
@@ -160,17 +210,53 @@ public class OutlineManager {
                 (float) -cameraPos.z
         );
         RenderSystem.applyModelViewMatrix();
-        mc.worldRenderer.entityOutlinesFramebuffer.beginWrite(false);
-        vertexBuffer.draw(RenderSystem.getModelViewStack(),
-                projectionMatrix, RenderSystem.getShader());
-        //mc.worldRenderer.entityOutlinesFramebuffer.endWrite();
-        VertexBuffer.unbind();
 
+        MinecraftClient.getInstance().worldRenderer.entityOutlinesFramebuffer.beginWrite(false);
+        vbo.draw(RenderSystem.getModelViewStack(), projectionMatrix, RenderSystem.getShader());
+        MinecraftClient.getInstance().getFramebuffer().beginWrite(false);
+        VertexBuffer.unbind();
 
         RenderSystem.getModelViewStack().popMatrix();
         RenderSystem.applyModelViewMatrix();
+    }
 
-        for (Map.Entry<BlockPos, Color> entry : blockEntityList.entrySet()){
+    public static void onBlockStateChange(BlockPos blockPos) {
+        for (AreaBox area : selectedAreas) {
+            if (isBlockInsideArea(blockPos, area)) {
+                rebuildArea(area);
+                break;
+            }
+        }
+    }
+
+    private static boolean isBlockInsideArea(BlockPos pos, AreaBox area) {
+        return pos.getX() >= area.minPos.getX() && pos.getX() <= area.maxPos.getX()
+                && pos.getY() >= area.minPos.getY() && pos.getY() <= area.maxPos.getY()
+                && pos.getZ() >= area.minPos.getZ() && pos.getZ() <= area.maxPos.getZ();
+    }
+
+    private static void rebuildArea(AreaBox area) {
+        AreaRenderData old = areaVbos.get(area);
+        if (old != null && old.vbo != null) {
+            old.vbo.close();
+        }
+
+        AreaRenderData renderData = new AreaRenderData();
+        renderData.vbo = buildMeshForArea(area, 0);
+        renderData.blockEntities = collectBlockEntitiesForArea(area);
+        VertexBuffer.unbind();
+
+        areaVbos.put(area, renderData);
+    }
+
+    private static void renderAreaBlockEntities(MatrixStack stack, Map<BlockPos, Color> blockEntities,
+                                                RenderTickCounter counter, Vec3d cameraPos) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        BlockEntityRenderDispatcher blockEntityRenderer = mc.getBlockEntityRenderDispatcher();
+        OutlineVertexConsumerProvider outlineProvider = mc.worldRenderer.bufferBuilders.getOutlineVertexConsumers();
+        float delta = counter.getTickDelta(false);
+
+        for (Map.Entry<BlockPos, Color> entry : blockEntities.entrySet()) {
             BlockPos blockPos = entry.getKey();
             Color color = entry.getValue();
 
@@ -181,24 +267,23 @@ public class OutlineManager {
             stack.push();
             stack.translate(x1, y1, z1);
 
-            outlineVertexConsumerProvider.setColor(color.getRed(), color.getGreen(), color.getBlue(), 1);
+            outlineProvider.setColor(color.getRed(), color.getGreen(), color.getBlue(), 1);
             BlockEntity blockEntity = mc.world.getBlockEntity(blockPos);
             if (blockEntity != null) {
-                blockEntityRenderer.render(blockEntity, delta, stack, outlineVertexConsumerProvider);
+                blockEntityRenderer.render(blockEntity, delta, stack, outlineProvider);
             }
             stack.pop();
         }
     }
 
-    public static void onRenderOutline(Map.Entry<BlockPos, BlockState> entry, float delta, Camera camera,
-                                       MatrixStack matrixStack, Color color, BufferBuilder bufferBuilder) {
+    private static void renderBlockOutline(Map.Entry<BlockPos, BlockState> entry, float delta, Camera camera,
+                                           MatrixStack matrixStack, Color color, BufferBuilder bufferBuilder) {
         MinecraftClient mc = MinecraftClient.getInstance();
         BlockRenderManager dispatcher = mc.getBlockRenderManager();
         BlockPos blockPos = entry.getKey();
         BlockState blockState = entry.getValue();
 
         matrixStack.push();
-
 
         if (!blockState.getFluidState().isEmpty()) {
             CustomFluidOutlineRenderer.render(mc.world, blockPos, bufferBuilder,
@@ -214,14 +299,6 @@ public class OutlineManager {
                     OverlayTexture.DEFAULT_UV, color.getRed(), color.getGreen(), color.getBlue());
         }
         matrixStack.pop();
-
-        if (blockState.getBlock() instanceof BlockWithEntity) {
-            BlockEntity blockEntity = mc.world.getBlockEntity(blockPos);
-            if (blockEntity != null) {
-                blockEntityList.put(blockEntity.getPos(), color);
-            }
-        }
-
     }
 
     public static void resolveBlocks() {
