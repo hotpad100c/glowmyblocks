@@ -7,14 +7,17 @@ import mypals.ml.wandSystem.AreaBox;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.World;
 import org.joml.Matrix4f;
@@ -22,6 +25,7 @@ import org.joml.Matrix4f;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 import static net.minecraft.client.render.RenderPhase.*;
@@ -175,11 +179,26 @@ public class OutlineManager {
 
         Vec3d cameraPos = camera.getPos();
 
+        OutlineVertexConsumerProvider provider = MinecraftClient.getInstance().getBufferBuilders()
+                .getOutlineVertexConsumers();
+        VertexConsumer consumer = provider.getBuffer(RenderLayer.getOutline(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+
+        Random random = Random.create();
+
+        //We need this to make it work idk why but i cant do anything :(
+
+
         for (AreaRenderData data : areaVbos.values()) {
             if (data.vbo != null) {
-                renderAreaVbo(data.vbo, projectionMatrix, cameraPos);
+                renderAreaVbo(data.vbo, cameraPos);
             }
         }
+        MatrixStack tempStack = new MatrixStack();
+        tempStack.translate(0, 0, 0);
+        tempStack.scale(0.0f, 0.0f, 0.0f);
+        MinecraftClient.getInstance().getBlockRenderManager().renderBlock(Blocks.STONE.getDefaultState(),
+                new BlockPos(0, 0, 0), (BlockRenderView) MinecraftClient.getInstance().world,tempStack,
+                consumer,true,random );
     }
     public static void renderBlockEntities(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
         if (selectedAreas.isEmpty() && blockToRenderer.isEmpty()) {
@@ -201,7 +220,7 @@ public class OutlineManager {
             }
         }
     }
-    private static void renderAreaVbo(VertexBuffer vbo, Matrix4f projectionMatrix, Vec3d cameraPos) {
+    private static void renderAreaVbo(VertexBuffer vbo, Vec3d cameraPos) {
         vbo.bind();
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().translate(
@@ -211,9 +230,10 @@ public class OutlineManager {
         );
         RenderSystem.applyModelViewMatrix();
 
-        MinecraftClient.getInstance().worldRenderer.entityOutlinesFramebuffer.beginWrite(false);
-        vbo.draw(RenderSystem.getModelViewStack(), projectionMatrix, RenderSystem.getShader());
-        MinecraftClient.getInstance().getFramebuffer().beginWrite(false);
+        MinecraftClient.getInstance().worldRenderer.getEntityOutlinesFramebuffer().beginWrite(false);
+
+        vbo.draw(RenderSystem.getModelViewStack(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+
         VertexBuffer.unbind();
 
         RenderSystem.getModelViewStack().popMatrix();

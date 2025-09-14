@@ -18,7 +18,7 @@ public class GlowMyBlocksScreenGenerator {
                         ConfigCategory.createBuilder()
                                 .name(Text.translatable("config.category.blockOutline"))
                                 //==================================================
-                                /*.group(ListOption.<String>createBuilder()
+                                .group(ListOption.<String>createBuilder()
                                         .name(Text.translatable("config.category.selectedBlock"))
                                         .description
                                                 (OptionDescription.createBuilder()
@@ -40,49 +40,6 @@ public class GlowMyBlocksScreenGenerator {
                                         .initial("")
                                         .build()
                                 ).group(ListOption.<String>createBuilder()
-                                        .name(Text.translatable("config.category.selectedEntity"))
-                                        .description
-                                                (OptionDescription.createBuilder()
-                                                        .text(Text.translatable("config.description.selectiveRenderings"))
-
-                                                        .build()
-                                                )
-                                        .binding(
-                                                new ArrayList<>(),
-                                                () -> {
-                                                    // 返回配置值，确保非空
-                                                    if (instance.instance().selectedEntityTypes == null) {
-                                                        GlowMyBlocksConfig.selectedEntityTypes = new ArrayList<>();
-                                                    }
-                                                    return instance.instance().selectedEntityTypes;
-                                                },
-                                                list -> instance.instance().selectedEntityTypes = list
-                                        )
-                                        .controller(StringControllerBuilder::create)
-                                        .initial("")
-                                        .build()
-                                ).group(ListOption.<String>createBuilder()
-                                        .name(Text.translatable("config.category.selectedParticle"))
-                                        .description
-                                                (OptionDescription.createBuilder()
-                                                        .text(Text.translatable("config.description.selectiveRenderings"))
-
-                                                        .build()
-                                                )
-                                        .binding(
-                                                new ArrayList<>(),
-                                                () -> {
-                                                    if (instance.instance().selectedParticleTypes == null) {
-                                                        GlowMyBlocksConfig.selectedParticleTypes = new ArrayList<>();
-                                                    }
-                                                    return instance.instance().selectedParticleTypes;
-                                                },
-                                                list -> instance.instance().selectedParticleTypes = list
-                                        )
-                                        .controller(StringControllerBuilder::create)
-                                        .initial("")
-                                        .build()
-                                )*/.group(ListOption.<String>createBuilder()
                                         .name(Text.translatable("config.option.selectedAreaRender"))
                                         .description
                                                 (OptionDescription.createBuilder()

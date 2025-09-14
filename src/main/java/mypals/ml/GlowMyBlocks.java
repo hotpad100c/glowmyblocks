@@ -39,14 +39,16 @@ public class GlowMyBlocks implements ModInitializer {
 		if(needRebuildOutlineMesh) {
 			OutlineManager.buildMeshes(counter);
 		}
-		OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
-		OutlineManager.renderBlocks(stack,counter, projectionMatrix);
+
+		//OutlineManager.renderBlocks(stack,counter, projectionMatrix);
 	}
 	public static void renderBlockEntitiesOutlines(MatrixStack stack, RenderTickCounter counter, Matrix4f projectionMatrix) {
 		if(needRebuildOutlineMesh) {
 			OutlineManager.buildMeshes(counter);
 		}
-		//OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
+		OutlineManager.renderBlocks(stack,counter, projectionMatrix);
+
+		OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
 	}
 	@Override
 	public void onInitialize() {
@@ -59,7 +61,7 @@ public class GlowMyBlocks implements ModInitializer {
 			updateConfig();
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
-			renderBlockOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
+			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
 			wandActions(client);

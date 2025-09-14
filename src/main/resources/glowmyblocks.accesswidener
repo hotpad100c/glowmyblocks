@@ -2,6 +2,7 @@ accessWidener v2 named
 accessible field net/minecraft/client/render/Tessellator allocator Lnet/minecraft/client/util/BufferAllocator;
 accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer clearCount I
 accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer offset I
+accessible field net/minecraft/client/render/WorldRenderer entityOutlinePostProcessor Lnet/minecraft/client/gl/PostEffectProcessor;
 accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer size I
 accessible field net/minecraft/client/render/BuiltBuffer buffer Lnet/minecraft/client/util/BufferAllocator$CloseableBuffer;
 accessible field net/minecraft/client/render/WorldRenderer entityOutlinesFramebuffer Lnet/minecraft/client/gl/Framebuffer;
