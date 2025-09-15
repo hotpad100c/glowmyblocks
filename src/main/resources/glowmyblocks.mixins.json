@@ -3,14 +3,15 @@
   "package": "mypals.ml.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ClientWorldMixin",
     "GlowMyBlocksWorldRenderMixin",
-    "ItemMixin",
-    "ClientWorldMixin"
+    "ItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-
+    "MouseMixin",
+    "NetworkingHandlerMixin"
   ]
 }

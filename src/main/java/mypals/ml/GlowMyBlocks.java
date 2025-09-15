@@ -12,6 +12,9 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.network.WorldLoadingState;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -21,6 +24,7 @@ import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static mypals.ml.config.GlowModeManager.resolveSelectedBlockStatesFromString;
 import static mypals.ml.config.GlowMyBlocksKeybinds.openConfigKey;
 import static mypals.ml.wandSystem.SelectedManager.*;
 import static mypals.ml.wandSystem.WandActionsManager.wandActions;
@@ -28,6 +32,7 @@ import static mypals.ml.wandSystem.WandActionsManager.wandActions;
 public class GlowMyBlocks implements ModInitializer {
 	public static final String MOD_ID = "glowmyblocks";
 	public static boolean needRebuildOutlineMesh = false;
+	public static boolean finishedLoadingWorld = false;
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
@@ -56,6 +61,7 @@ public class GlowMyBlocks implements ModInitializer {
 		needRebuildOutlineMesh = true;
 		HudRenderCallback.EVENT.register((context, tickDelta) -> {
 			WandTooltipRenderer.renderWandTooltip(context);
+			WandTooltipRenderer.renderWandModeIcon(context);
 		});
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
 			updateConfig();
@@ -67,6 +73,15 @@ public class GlowMyBlocks implements ModInitializer {
 			wandActions(client);
 			while (openConfigKey.wasPressed()) {
 				client.setScreen(GlowMyBlocksScreenGenerator.getConfigScreen(client.currentScreen));
+			}
+			if(!finishedLoadingWorld){
+				if(client.getNetworkHandler() != null && client.getNetworkHandler().worldLoadingState != null){
+					if(client.getNetworkHandler().worldLoadingState.isReady()){
+						finishedLoadingWorld = true;
+						resolveSettings();
+						needRebuildOutlineMesh = true;
+					}
+				}
 			}
 		});
 		UseBlockCallback.EVENT.register((player, world, hand, pos) -> {
@@ -97,8 +112,9 @@ public class GlowMyBlocks implements ModInitializer {
 		needRebuildOutlineMesh = true;
 	}
 	private static void resolveSettings(){
-		OutlineManager.resolveBlocks();
+		resolveSelectedBlockStatesFromString(GlowMyBlocksConfig.selectedBlockTypes);
 		resolveSelectedAreasFromString(GlowMyBlocksConfig.selectedAreasSaved);
 		resolveSelectedWandFromString(GlowMyBlocksConfig.wand);
+		OutlineManager.resolveBlocks();
 	}
 }

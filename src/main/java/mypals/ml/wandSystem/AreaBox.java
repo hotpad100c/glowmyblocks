@@ -45,15 +45,15 @@ public class AreaBox {
         float height = Math.abs(maxPos.getY() - minPos.getY());
         Vec3d midpos = new Vec3d(midX, midY, midZ);
 
-        Vec3d v1 = new Vec3d(minPos.getX(), minPos.getY(), minPos.getZ()); // 底面左下
-        Vec3d v2 = new Vec3d(maxPos.getX()+1, minPos.getY(), minPos.getZ()); // 底面右下
-        Vec3d v3 = new Vec3d(maxPos.getX()+1, minPos.getY(), maxPos.getZ()+1); // 底面右上
-        Vec3d v4 = new Vec3d(minPos.getX(), minPos.getY(), maxPos.getZ()+1); // 底面左上
+        Vec3d v1 = new Vec3d(minPos.getX(), minPos.getY(), minPos.getZ());
+        Vec3d v2 = new Vec3d(maxPos.getX()+1, minPos.getY(), minPos.getZ());
+        Vec3d v3 = new Vec3d(maxPos.getX()+1, minPos.getY(), maxPos.getZ()+1);
+        Vec3d v4 = new Vec3d(minPos.getX(), minPos.getY(), maxPos.getZ()+1);
 
-        Vec3d v5 = new Vec3d(minPos.getX(), maxPos.getY()+1, minPos.getZ()); // 顶面左下
-        Vec3d v6 = new Vec3d(maxPos.getX()+1, maxPos.getY()+1, minPos.getZ()); // 顶面右下
-        Vec3d v7 = new Vec3d(maxPos.getX()+1, maxPos.getY()+1, maxPos.getZ()+1); // 顶面右上
-        Vec3d v8 = new Vec3d(minPos.getX(), maxPos.getY()+1, maxPos.getZ()+1); // 顶面左上
+        Vec3d v5 = new Vec3d(minPos.getX(), maxPos.getY()+1, minPos.getZ());
+        Vec3d v6 = new Vec3d(maxPos.getX()+1, maxPos.getY()+1, minPos.getZ());
+        Vec3d v7 = new Vec3d(maxPos.getX()+1, maxPos.getY()+1, maxPos.getZ()+1);
+        Vec3d v8 = new Vec3d(minPos.getX(), maxPos.getY()+1, maxPos.getZ()+1);
 
 
         // 绘制底面四条边

@@ -9,7 +9,6 @@ import net.fabricmc.loader.api.FabricLoader;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class GlowMyBlocksConfig {
@@ -21,7 +20,8 @@ public class GlowMyBlocksConfig {
                     .setJson5(true)
                     .build())
             .build();
-
+    @SerialEntry
+    public static int glowBlockMode = 0;
     @SerialEntry
     public static List<String> selectedBlockTypes = new ArrayList<>();
     @SerialEntry

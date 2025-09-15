@@ -2,8 +2,8 @@
   "config.title": "光耀千万块",
   "config.category.blockOutline": "方块轮廓设置",
   "config.description.blockOutline": "让选区内的方块向实体发光一样显示轮廓",
-  "config.category.selectedBlock": "选择的目标方块",
-  "config.category.selectedAreaRender": "选择的渲染区域",
+  "config.category.selectedBlock": "选择的高亮方块",
+  "config.option.selectedAreaRender": "选择的高亮渲染区域",
   "config.option.spectator_select": "旁观者模式选择",
   "config.option.renderSelectionMarker": "渲染选择标记",
   "config.option.wand": "选择工具",
@@ -22,5 +22,13 @@
   "category.blockOutline": "光耀千万块 按键设置",
   "key.blockOutline.addSelection": "添加选区",
   "key.blockOutline.config": "开启设置GUI",
-  "key.blockOutline.removeSelection": "切除选区"
+  "key.blockOutline.removeSelection": "切除选区",
+
+
+  "config.wand.holdSprint": "疾跑按键 + 滚轮：切换模式",
+  "config.wand.switchMode": "滚轮：选择模式",
+  "config.blockOutline.render_mode.off": "关闭",
+  "config.blockOutline.render_mode.render_inside_exclude": "高亮选区内排除特定内容",
+  "config.blockOutline.render_mode.render_inside_include": "高亮选区内特定内容",
+  "config.blockOutline.render_mode.render_inside_all": "高亮选区内所有内容"
 }

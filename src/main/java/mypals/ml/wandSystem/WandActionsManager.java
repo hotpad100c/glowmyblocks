@@ -1,5 +1,6 @@
 package mypals.ml.wandSystem;
 
+import mypals.ml.config.GlowModeManager;
 import mypals.ml.config.GlowMyBlocksConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static mypals.ml.GlowMyBlocks.onConfigUpdated;
+import static mypals.ml.config.GlowModeManager.currentGlowRenderMode;
+import static mypals.ml.config.GlowModeManager.resolveSelectiveBlockRenderingMode;
 import static mypals.ml.config.GlowMyBlocksConfig.*;
 import static mypals.ml.config.GlowMyBlocksKeybinds.addOutlineArea;
 import static mypals.ml.config.GlowMyBlocksKeybinds.deleteOutlineArea;
@@ -47,6 +50,19 @@ public class WandActionsManager {
                 player.playSound(SoundEvents.BLOCK_CHAIN_PLACE);
             }
         }
+    }
+    public static void switchRenderMod(boolean increase){
+        GlowMyBlocksConfig.CONFIG_HANDLER.instance();
+        if(selectCoolDown > 0){return;}
+        if (increase) {
+            glowBlockMode = glowBlockMode == GlowModeManager.GlowRenderMode.values().length - 1 ? 0 : glowBlockMode + 1;
+        } else {
+            glowBlockMode = glowBlockMode == 0 ? GlowModeManager.GlowRenderMode.values().length - 1 : glowBlockMode - 1;
+        }
+        resolveSelectiveBlockRenderingMode(glowBlockMode);
+        GlowMyBlocksConfig.CONFIG_HANDLER.save();
+        onConfigUpdated();
+        selectCoolDown = SELECT_COOLDOWN;
     }
     public static void addAreaAction(BlockPos pos, Hand hand, PlayerEntity player, World world) {
         if (pos1 != null && pos2 !=null) {

@@ -9,6 +9,8 @@ import net.minecraft.text.Text;
 import java.awt.*;
 import java.util.ArrayList;
 
+import static mypals.ml.config.GlowModeManager.resolveSelectiveBlockRenderingMode;
+
 public class GlowMyBlocksScreenGenerator {
     public static Screen getConfigScreen(Screen screen){
         var instance = GlowMyBlocksConfig.CONFIG_HANDLER;
@@ -38,6 +40,15 @@ public class GlowMyBlocksScreenGenerator {
                                         )
                                         .controller(StringControllerBuilder::create)
                                         .initial("")
+                                        .build()
+                                ).option(Option.<Integer>createBuilder()
+                                        .name(Text.translatable("config.lucidity.render_mode.rendering_mode_block"))
+                                        .description(OptionDescription.of(Text.translatable("config.lucidity.render_mode.rendering_mode_block")))
+                                        .binding(0, () -> instance.instance().glowBlockMode, v -> instance.instance().glowBlockMode = v)
+                                        .controller(opt -> IntegerSliderControllerBuilder.create(opt)
+                                                .range(0, GlowModeManager.GlowRenderMode.values().length-1)
+                                                .step(1)
+                                                .formatValue(val -> Text.translatable(resolveSelectiveBlockRenderingMode(val))))
                                         .build()
                                 ).group(ListOption.<String>createBuilder()
                                         .name(Text.translatable("config.option.selectedAreaRender"))

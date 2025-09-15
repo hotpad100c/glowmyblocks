@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static mypals.ml.GlowMyBlocks.MOD_ID;
+import static mypals.ml.config.GlowModeManager.currentGlowRenderMode;
 import static mypals.ml.config.GlowMyBlocksKeybinds.*;
 import static mypals.ml.config.GlowMyBlocksConfig.selectInSpectator;
 import static mypals.ml.wandSystem.WandActionsManager.pos1;
@@ -47,6 +48,10 @@ public class WandTooltipRenderer {
         TriConsumer<KeyBinding,Color ,String> addKeyTooltip = (key,color, icon) ->
                 addTooltip.accept(Text.translatable(key.getTranslationKey()).getString() + "(" + key.getBoundKeyLocalizedText().getString() + ")", color, icon);
 
+        if(MinecraftClient.getInstance().options.sprintKey.isPressed()){
+            addTooltip.accept("config.wand.switchMode", new Color(255, 255, 255, 200), "textures/gui/mouse_middle.png");
+        }else if(pos1 == null && pos2 == null)
+                addTooltip.accept("config.wand.holdSprint", new Color(200, 200, 200, 150), "textures/gui/hotkey.png");
         if (addOutlineArea.isPressed()) {
             addKeyTooltip.accept(addOutlineArea, new Color(200, 255, 200, 200),"textures/gui/hotkey.png");
             if (pos1 != null && pos2 != null) {
@@ -111,5 +116,26 @@ public class WandTooltipRenderer {
 
             y += lineHeight;
         }
+    }
+    public static void renderWandModeIcon(DrawContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        PlayerEntity player = client.player;
+        boolean shouldSelect = player.getMainHandStack().getItem() == SelectedManager.wand || (selectInSpectator && player.isSpectator());
+        if (!shouldSelect) {
+            return;
+        }
+
+        int screenHeight = client.getWindow().getScaledHeight();
+        int centerY = screenHeight;
+
+        int iconWidth = 32;
+
+        int x = 0;
+        int y = centerY - 60;
+        RenderSystem.enableBlend();
+        context.drawTexture(Identifier.of(MOD_ID, currentGlowRenderMode.getIcon()), x, y, 0, 0, iconWidth, iconWidth, iconWidth, iconWidth);
+        RenderSystem.disableBlend();
+        context.drawText(client.textRenderer, Text.translatable(currentGlowRenderMode.getTranslationKey()), x+iconWidth+2, y+(iconWidth/2), 0xFFFFFFE0, true);
+
     }
 }

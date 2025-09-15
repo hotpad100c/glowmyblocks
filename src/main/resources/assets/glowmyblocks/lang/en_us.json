@@ -2,8 +2,8 @@
   "config.title": "GlowMyBlocks",
   "config.category.blockOutline": "Block Outline Settings",
   "config.description.blockOutline": "Makes blocks within the selected area glow with an outline like entities",
-  "config.category.selectedBlock": "Selected Target Blocks",
-  "config.category.selectedAreaRender": "Selected Render Areas",
+  "config.category.selectedBlock": "Selected Highlight Blocks",
+  "config.option.selectedAreaRender": "Selected Highlight Areas",
   "config.option.spectator_select": "Spectator Mode Selection",
   "config.option.renderSelectionMarker": "Render Selection Marker",
   "config.option.wand": "Selection Tool",
@@ -22,5 +22,11 @@
   "category.blockOutline": "GlowMyBlocks Hotkeys",
   "key.blockOutline.addSelection": "Add Selection Key",
   "key.blockOutline.config": "Open Config GUI",
-  "key.blockOutline.removeSelection": "Remove Selection Key"
+  "key.blockOutline.removeSelection": "Remove Selection Key",
+  "config.wand.holdSprint": "Sprint + Mouse Wheel：Switch Mode",
+  "config.wand.switchMode": "Mouse Wheel：Select Mode",
+  "config.blockOutline.render_mode.off": "Off",
+  "config.blockOutline.render_mode.render_inside_include": "Highlight specific contents inside the selection",
+  "config.blockOutline.render_mode.render_inside_exclude": "Do not highlight specific contents inside the selection",
+  "config.blockOutline.render_mode.render_inside_all": "Highlight all contents inside the selection"
 }
