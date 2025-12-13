@@ -1,10 +1,13 @@
 package mypals.ml.blockOutline;
 
+import mypals.ml.config.GlowModeManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -12,6 +15,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import java.util.List;
+
+import static net.minecraft.client.render.OverlayTexture.DEFAULT_UV;
 
 public class CustomBlockOutlineRenderer {
     public static void render(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos,
@@ -26,10 +31,13 @@ public class CustomBlockOutlineRenderer {
             List<BakedQuad> quads = model.getQuads(state, direction, random);
             if (!quads.isEmpty()) {
                 mutable.set(pos, direction);
-                if (Block.shouldDrawSide(state, world, pos, direction, mutable) || !OutlineManager.blockToRenderer.containsKey(pos.offset(direction))) {
+                if (Block.shouldDrawSide(state, world, pos, direction, mutable)
+                        || !GlowModeManager.shouldGlow(mutable,world.getBlockState(mutable),null)) {
                     for (BakedQuad quad : quads) {
-                        vertexConsumer.quad(matrices.peek(), quad, new float[]{1, 1, 1, 1},
-                                (float) r /255, (float) g /255, (float) b /255, 1.0F, new int[]{1, 1, 1, 1}, overlay, true);
+                        vertexConsumer.quad(matrices.peek(), quad,
+                                (float) r /255, (float) g /255, (float) b /255, 1.0F,
+                                LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                                DEFAULT_UV);
                     }
                 }
             }
