@@ -22,11 +22,9 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static mypals.ml.blockOutline.OutlineManager.*;
 import static mypals.ml.config.GlowModeManager.shouldGlow;
@@ -46,47 +44,43 @@ public class ChunkDataBuilder {
             Map<BlockPos, Color> blockEntities
     ) {}
 
+    private static final long REBUILD_DELAY_MS = 45;
+
+    private static final Map<AreaBox, Map<ChunkSectionPos, Long>> pendingRebuilds = new ConcurrentHashMap<>();
+
+    private static final ScheduledExecutorService rebuildScheduler = Executors.newSingleThreadScheduledExecutor();
+
     private static final ExecutorService WORKER_POOL = Util.getMainWorkerExecutor();
 
-    private static CompletableFuture<Void> currentBuildTask = null;
-
-    private static final AtomicBoolean isBuilding = new AtomicBoolean(false);
+    private static final AtomicReference<CompletableFuture<Void>> currentBuildTask = new AtomicReference<>();
 
     public static void buildMeshesAsync(RenderTickCounter counter) {
-        if (!isBuilding.compareAndSet(false, true)) {
-            return;
-        }
-
-        if (currentBuildTask != null && !currentBuildTask.isDone()) {
-            currentBuildTask.cancel(false);
+        CompletableFuture<Void> oldTask = currentBuildTask.get();
+        if (oldTask != null) {
+            oldTask.cancel(true);
         }
 
         World world = MinecraftClient.getInstance().world;
         if (world == null) {
-            isBuilding.set(false);
             return;
         }
 
         float delta = counter.getTickDelta(false);
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
-
         List<AreaBox> areasSnapshot = new ArrayList<>(selectedAreas);
-
-        currentBuildTask = CompletableFuture
+        CompletableFuture<Void> newTask = CompletableFuture
                 .supplyAsync(() -> collectAllAreaData(world, areasSnapshot), WORKER_POOL)
-
                 .thenApplyAsync(areaDataMap -> buildVertexData(areaDataMap, delta, camera), WORKER_POOL)
-
                 .thenAcceptAsync(ChunkDataBuilder::uploadToGPU, MinecraftClient.getInstance())
-
                 .whenComplete((result, error) -> {
-                    isBuilding.set(false);
-                    if (error != null) {
+                    if (error != null && !(error.getCause() instanceof CancellationException)) {
                         GlowMyBlocks.LOGGER.error("Failed to build mesh:", error);
                     } else {
                         GlowMyBlocks.needRebuildOutlineMesh = false;
                     }
                 });
+
+        currentBuildTask.set(newTask);
     }
 
     private static Map<AreaBox, List<ChunkBuildResult>> collectAllAreaData(
@@ -150,18 +144,19 @@ public class ChunkDataBuilder {
         }
         return false;
     }
-    private static Map<AreaBox, Map<ChunkSectionPos, BuiltBuffer>> buildVertexData(
+
+    private static Map<AreaBox, Map<ChunkSectionPos, ChunkBufferData>> buildVertexData(
             Map<AreaBox, List<ChunkBuildResult>> areaDataMap,
             float delta,
             Camera camera) {
 
-        Map<AreaBox, Map<ChunkSectionPos, BuiltBuffer>> result = new ConcurrentHashMap<>();
+        Map<AreaBox, Map<ChunkSectionPos, ChunkBufferData>> result = new ConcurrentHashMap<>();
 
         areaDataMap.entrySet().parallelStream().forEach(entry -> {
             AreaBox area = entry.getKey();
             List<ChunkBuildResult> chunks = entry.getValue();
 
-            Map<ChunkSectionPos, BuiltBuffer> chunkBuffers = new ConcurrentHashMap<>();
+            Map<ChunkSectionPos, ChunkBufferData> chunkBuffers = new ConcurrentHashMap<>();
 
             chunks.parallelStream().forEach(chunk -> {
                 if (chunk.blocks.isEmpty()) return;
@@ -187,7 +182,8 @@ public class ChunkDataBuilder {
 
                 BuiltBuffer builtBuffer = buffer.endNullable();
                 if (builtBuffer != null) {
-                    chunkBuffers.put(chunk.sectionPos, builtBuffer);
+                    chunkBuffers.put(chunk.sectionPos,
+                            new ChunkBufferData(builtBuffer, chunk.blockEntities));
                 }
             });
 
@@ -197,7 +193,7 @@ public class ChunkDataBuilder {
         return result;
     }
 
-    private static void uploadToGPU(Map<AreaBox, Map<ChunkSectionPos, BuiltBuffer>> areaDataMap) {
+    private static void uploadToGPU(Map<AreaBox, Map<ChunkSectionPos, ChunkBufferData>> areaDataMap) {
         for (AreaRenderData data : areaVbos.values()) {
             for (ChunkRenderData chunk : data.sectionData.values()) {
                 if (chunk.vbo != null) chunk.vbo.close();
@@ -205,24 +201,26 @@ public class ChunkDataBuilder {
         }
         areaVbos.clear();
 
-        for (Map.Entry<AreaBox, Map<ChunkSectionPos, BuiltBuffer>> entry : areaDataMap.entrySet()) {
+        for (Map.Entry<AreaBox, Map<ChunkSectionPos, ChunkBufferData>> entry : areaDataMap.entrySet()) {
             AreaBox area = entry.getKey();
-            Map<ChunkSectionPos, BuiltBuffer> chunkBuffers = entry.getValue();
+            Map<ChunkSectionPos, ChunkBufferData> chunkBuffers = entry.getValue();
 
             AreaRenderData renderData = new AreaRenderData();
 
-            for (Map.Entry<ChunkSectionPos, BuiltBuffer> chunkEntry : chunkBuffers.entrySet()) {
+            for (Map.Entry<ChunkSectionPos, ChunkBufferData> chunkEntry : chunkBuffers.entrySet()) {
                 ChunkSectionPos sectionPos = chunkEntry.getKey();
-                BuiltBuffer builtBuffer = chunkEntry.getValue();
+                ChunkBufferData bufferData = chunkEntry.getValue();
 
                 ChunkRenderData chunkData = new ChunkRenderData();
 
                 VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
                 vbo.bind();
-                vbo.upload(builtBuffer);
+                vbo.upload(bufferData.buffer());
                 VertexBuffer.unbind();
 
                 chunkData.vbo = vbo;
+                chunkData.blockEntities = bufferData.blockEntities();
+
                 renderData.sectionData.put(sectionPos, chunkData);
             }
 
@@ -237,6 +235,7 @@ public class ChunkDataBuilder {
         CompletableFuture
                 .supplyAsync(() -> {
                     List<BlockRenderData> blocks = new ArrayList<>();
+                    Map<BlockPos, Color> blockEntities = new ConcurrentHashMap<>();
 
                     int startX = Math.max(sectionPos.getMinX(), area.minPos.getX());
                     int endX = Math.min(sectionPos.getMaxX(), area.maxPos.getX());
@@ -256,36 +255,45 @@ public class ChunkDataBuilder {
                                 if (checkVisibleFaces(world, blockPos, area)) {
                                     blocks.add(new BlockRenderData(blockPos, state, area.color, true));
                                 }
+
+                                if (state.getBlock() instanceof BlockWithEntity) {
+                                    BlockEntity be = world.getBlockEntity(blockPos);
+                                    if (be != null) {
+                                        blockEntities.put(be.getPos(), area.color);
+                                    }
+                                }
                             }
                         }
                     }
-                    return blocks;
+                    return new ChunkBuildResult(sectionPos, blocks, blockEntities);
                 }, WORKER_POOL)
 
-                .thenApplyAsync(blocks -> {
-                    if (blocks.isEmpty()) return null;
+                .thenApplyAsync(chunkResult -> {
+                    if (chunkResult.blocks.isEmpty()) return null;
 
                     MinecraftClient mc = MinecraftClient.getInstance();
                     Camera camera = mc.gameRenderer.getCamera();
                     float delta = mc.getRenderTickCounter().getTickDelta(false);
 
-                    BufferBuilder buffer = new BufferBuilder(new BufferAllocator(2048),VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+                    BufferBuilder buffer = new BufferBuilder(new BufferAllocator(2048),
+                            VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
 
                     MatrixStack stack = new MatrixStack();
 
-                    for (BlockRenderData blockData : blocks) {
+                    for (BlockRenderData blockData : chunkResult.blocks) {
                         stack.loadIdentity();
                         stack.translate(blockData.pos.getX(), blockData.pos.getY(), blockData.pos.getZ());
                         renderBlockOutline(
                                 new AbstractMap.SimpleEntry<>(blockData.pos, blockData.state),
-                                delta, camera, stack, blockData.color,Random.create(), buffer
+                                delta, camera, stack, blockData.color, Random.create(), buffer
                         );
                     }
 
-                    return buffer.endNullable();
+                    BuiltBuffer builtBuffer = buffer.endNullable();
+                    return new ChunkBufferData(builtBuffer, chunkResult.blockEntities);
                 }, WORKER_POOL)
 
-                .thenAcceptAsync(builtBuffer -> {
+                .thenAcceptAsync(bufferData -> {
                     AreaRenderData renderData = areaVbos.get(area);
                     if (renderData == null) return;
 
@@ -299,14 +307,16 @@ public class ChunkDataBuilder {
                         chunkData.vbo.close();
                     }
 
-                    if (builtBuffer != null) {
+                    if (bufferData != null && bufferData.buffer() != null) {
                         VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
                         vbo.bind();
-                        vbo.upload(builtBuffer);
+                        vbo.upload(bufferData.buffer());
                         VertexBuffer.unbind();
                         chunkData.vbo = vbo;
+                        chunkData.blockEntities = bufferData.blockEntities();
                     } else {
                         chunkData.vbo = null;
+                        chunkData.blockEntities = new ConcurrentHashMap<>();
                     }
                 }, MinecraftClient.getInstance())
 
@@ -317,21 +327,69 @@ public class ChunkDataBuilder {
     }
 
     public static void onBlockStateChange(BlockPos blockPos) {
-        for (AreaBox area : selectedAreas) {
+        long currentTime = System.currentTimeMillis();
 
-            for(Direction direction : Direction.values()) {
+        for (AreaBox area : selectedAreas) {
+            for (Direction direction : Direction.values()) {
                 BlockPos adjacentPos = blockPos.offset(direction);
                 if (isBlockInsideArea(adjacentPos, area)) {
                     ChunkSectionPos adjacentSectionPos = ChunkSectionPos.from(adjacentPos);
-                    rebuildChunkSectionAsync(area, adjacentSectionPos);
+
+                    Map<ChunkSectionPos, Long> areaRebuilds = pendingRebuilds.computeIfAbsent(
+                            area, k -> new ConcurrentHashMap<>()
+                    );
+
+                    areaRebuilds.put(adjacentSectionPos, currentTime + REBUILD_DELAY_MS);
                 }
             }
+        }
+
+        scheduleRebuildCheck();
+    }
+
+    private static final AtomicBoolean rebuildCheckScheduled = new AtomicBoolean(false);
+
+    private static void scheduleRebuildCheck() {
+        if (rebuildCheckScheduled.compareAndSet(false, true)) {
+            rebuildScheduler.schedule(() -> {
+                processScheduledRebuilds();
+                rebuildCheckScheduled.set(false);
+            }, REBUILD_DELAY_MS, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private static void processScheduledRebuilds() {
+        long currentTime = System.currentTimeMillis();
+
+        pendingRebuilds.forEach((area, chunks) -> {
+            chunks.entrySet().removeIf(entry -> {
+                ChunkSectionPos sectionPos = entry.getKey();
+                long scheduledTime = entry.getValue();
+
+                if (currentTime >= scheduledTime) {
+                    rebuildChunkSectionAsync(area, sectionPos);
+                    return true;
+                }
+                return false;
+            });
+
+            if (chunks.isEmpty()) {
+                pendingRebuilds.remove(area);
+            }
+        });
+
+        if (!pendingRebuilds.isEmpty()) {
+            scheduleRebuildCheck();
         }
     }
 
     public static void shutdown() {
-        if (currentBuildTask != null) {
-            currentBuildTask.cancel(true);
+        CompletableFuture<Void> task = currentBuildTask.get();
+        if (task != null) {
+            task.cancel(true);
         }
+
+        rebuildScheduler.shutdownNow();
+        pendingRebuilds.clear();
     }
 }

@@ -112,7 +112,7 @@ public class WandTooltipRenderer {
             }
 
             int textX = x + (item.icon != null ? 20 : 0);
-            context.drawText(client.textRenderer, item.text, textX, (int) (y + 4), item.color, true);
+            context.drawText(client.textRenderer, item.text, textX, y + 4, item.color, true);
 
             y += lineHeight;
         }

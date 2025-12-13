@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import static mypals.ml.blockOutline.ChunkDataBuilder.buildMeshesAsync;
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
-import static net.minecraft.client.render.RenderPhase.*;
 
 public class OutlineManager {
 
@@ -34,43 +33,15 @@ public class OutlineManager {
     public static class AreaRenderData {
         public Map<ChunkSectionPos, ChunkRenderData> sectionData = new HashMap<>();
     }
-
+    record ChunkBufferData(
+            BuiltBuffer buffer,
+            Map<BlockPos, Color> blockEntities
+    ) {}
     public static class ChunkRenderData {
         public VertexBuffer vbo;
         public Map<BlockPos, Color> blockEntities = new HashMap<>();
     }
 
-    private static final RenderPhase.Transparency STO = new RenderPhase.Transparency(
-            "sto",
-            () -> {
-                RenderSystem.enableBlend();
-                RenderSystem.blendFunc(
-                        GlStateManager.SrcFactor.SRC_ALPHA,
-                        GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA
-                );
-            },
-            () -> {
-                RenderSystem.disableBlend();
-                RenderSystem.defaultBlendFunc();
-            }
-    );
-
-    private static final RenderLayer GLOWING_OUTLINE_RENDER = RenderLayer.of(
-            "block_glow_outline",
-            VertexFormats.POSITION_TEXTURE_COLOR,
-            VertexFormat.DrawMode.QUADS,
-            256,
-            false, false,
-            RenderLayer.MultiPhaseParameters.builder()
-                    .transparency(STO)
-                    .depthTest(RenderPhase.ALWAYS_DEPTH_TEST)
-                    .cull(DISABLE_CULLING)
-                    .program(COLOR_PROGRAM)
-                    .lightmap(DISABLE_LIGHTMAP)
-                    .writeMaskState(ALL_MASK)
-                    .texture(BLOCK_ATLAS_TEXTURE)
-                    .build(true)
-    );
 
     public static void buildMeshes(RenderTickCounter counter) {
 
@@ -103,7 +74,7 @@ public class OutlineManager {
         tempStack.translate(0, 0, 0);
         tempStack.scale(0.0f, 0.0f, 0.0f);
         MinecraftClient.getInstance().getBlockRenderManager().renderBlock(Blocks.STONE.getDefaultState(),
-                new BlockPos(0, 0, 0), (BlockRenderView) MinecraftClient.getInstance().world,tempStack,
+                new BlockPos(0, 0, 0), MinecraftClient.getInstance().world,tempStack,
                 consumer.getBuffer(RenderLayer.getOutline(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE)),true,random );
     }
 
@@ -192,7 +163,7 @@ public class OutlineManager {
         }
 
         if (blockState.getRenderType() == BlockRenderType.MODEL) {
-            CustomBlockOutlineRenderer.render((BlockRenderView) mc.world,
+            CustomBlockOutlineRenderer.render(mc.world,
                     dispatcher.getModel(blockState), blockState, blockPos, matrixStack,
                     bufferBuilder, random,
                     blockState.getRenderingSeed(blockPos),

@@ -1,5 +1,6 @@
 package mypals.ml;
 
+import mypals.ml.blockOutline.ChunkDataBuilder;
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.config.GlowMyBlocksConfig;
 import mypals.ml.config.GlowMyBlocksKeybinds;
@@ -8,6 +9,7 @@ import mypals.ml.wandSystem.WandTooltipRenderer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
@@ -24,6 +26,7 @@ import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static mypals.ml.blockOutline.OutlineManager.areaVbos;
 import static mypals.ml.config.GlowModeManager.resolveSelectedBlockStatesFromString;
 import static mypals.ml.config.GlowMyBlocksKeybinds.openConfigKey;
 import static mypals.ml.wandSystem.SelectedManager.*;
@@ -68,6 +71,18 @@ public class GlowMyBlocks implements ModInitializer {
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
 			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
+		});
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			ChunkDataBuilder.shutdown();
+			areaVbos.values().forEach(data -> {
+				data.sectionData.values().forEach(chunk -> {
+					if (chunk.vbo != null) chunk.vbo.close();
+				});
+			});
+			areaVbos.clear();
+		});
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			ChunkDataBuilder.shutdown();
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
 			wandActions(client);

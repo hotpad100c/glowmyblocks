@@ -31,12 +31,17 @@ public class GlowMyBlocksScreenGenerator {
                                         .binding(
                                                 new ArrayList<>(),
                                                 () -> {
-                                                    if (instance.instance().selectedBlockTypes == null) {
+                                                    instance.instance();
+                                                    if (GlowMyBlocksConfig.selectedBlockTypes == null) {
                                                         GlowMyBlocksConfig.selectedBlockTypes = new ArrayList<>();
                                                     }
-                                                    return instance.instance().selectedBlockTypes;
+                                                    instance.instance();
+                                                    return GlowMyBlocksConfig.selectedBlockTypes;
                                                 },
-                                                list -> instance.instance().selectedBlockTypes = list
+                                                list -> {
+                                                    instance.instance();
+                                                    GlowMyBlocksConfig.selectedBlockTypes = list;
+                                                }
                                         )
                                         .controller(StringControllerBuilder::create)
                                         .initial("")
@@ -44,7 +49,13 @@ public class GlowMyBlocksScreenGenerator {
                                 ).option(Option.<Integer>createBuilder()
                                         .name(Text.translatable("config.lucidity.render_mode.rendering_mode_block"))
                                         .description(OptionDescription.of(Text.translatable("config.lucidity.render_mode.rendering_mode_block")))
-                                        .binding(0, () -> instance.instance().glowBlockMode, v -> instance.instance().glowBlockMode = v)
+                                        .binding(0, () -> {
+                                            instance.instance();
+                                            return GlowMyBlocksConfig.glowBlockMode;
+                                        }, v -> {
+                                            instance.instance();
+                                            GlowMyBlocksConfig.glowBlockMode = v;
+                                        })
                                         .controller(opt -> IntegerSliderControllerBuilder.create(opt)
                                                 .range(0, GlowModeManager.GlowRenderMode.values().length-1)
                                                 .step(1)
@@ -60,12 +71,17 @@ public class GlowMyBlocksScreenGenerator {
                                         .binding(
                                                 new ArrayList<>(),
                                                 () -> {
-                                                    if (instance.instance().selectedAreasSaved == null) {
+                                                    instance.instance();
+                                                    if (GlowMyBlocksConfig.selectedAreasSaved == null) {
                                                         GlowMyBlocksConfig.selectedAreasSaved = new ArrayList<>();
                                                     }
-                                                    return instance.instance().selectedAreasSaved;
+                                                    instance.instance();
+                                                    return GlowMyBlocksConfig.selectedAreasSaved;
                                                 },
-                                                list -> instance.instance().selectedAreasSaved = list
+                                                list -> {
+                                                    instance.instance();
+                                                    GlowMyBlocksConfig.selectedAreasSaved = list;
+                                                }
                                         )
                                         .controller(StringControllerBuilder::create)
                                         .initial("")
@@ -85,7 +101,13 @@ public class GlowMyBlocksScreenGenerator {
                                                                 .text(Text.translatable("config.description.spectator_select"))
                                                                 .build()
                                                         )
-                                                        .binding(true, () -> instance.instance().selectInSpectator, bool -> instance.instance().selectInSpectator = bool)
+                                                        .binding(true, () -> {
+                                                            instance.instance();
+                                                            return GlowMyBlocksConfig.selectInSpectator;
+                                                        }, bool -> {
+                                                            instance.instance();
+                                                            GlowMyBlocksConfig.selectInSpectator = bool;
+                                                        })
                                                         .controller(BooleanControllerBuilder::create)
                                                         .build()
                                         ).option(
@@ -95,19 +117,37 @@ public class GlowMyBlocksScreenGenerator {
                                                                 .text(Text.translatable("config.description.renderSelectionMarker"))
                                                                 .build()
                                                         )
-                                                        .binding(false, () -> instance.instance().renderSelectionMarker, bool -> instance.instance().renderSelectionMarker = bool)
+                                                        .binding(false, () -> {
+                                                            instance.instance();
+                                                            return GlowMyBlocksConfig.renderSelectionMarker;
+                                                        }, bool -> {
+                                                            instance.instance();
+                                                            GlowMyBlocksConfig.renderSelectionMarker = bool;
+                                                        })
                                                         .controller(BooleanControllerBuilder::create)
                                                         .build()
                                         ).option(Option.<String>createBuilder()
                                                 .name(Text.translatable("config.option.wand"))
                                                 .description(OptionDescription.of(Text.translatable("config.description.wand")))
-                                                .binding("minecraft:breeze_rod", () -> instance.instance().wand, s -> instance.instance().wand = s)
+                                                .binding("minecraft:breeze_rod", () -> {
+                                                    instance.instance();
+                                                    return GlowMyBlocksConfig.wand;
+                                                }, s -> {
+                                                    instance.instance();
+                                                    GlowMyBlocksConfig.wand = s;
+                                                })
                                                 .controller(opt -> StringControllerBuilder.create(opt))
                                                 .build()
                                         ).option(
                                                 Option.<Color>createBuilder()
                                                         .name(Text.translatable("config.description.area_color"))
-                                                        .binding(Color.white, () -> instance.instance().areaColor, color -> instance.instance().areaColor = color)
+                                                        .binding(Color.white, () -> {
+                                                            instance.instance();
+                                                            return GlowMyBlocksConfig.areaColor;
+                                                        }, color -> {
+                                                            instance.instance();
+                                                            GlowMyBlocksConfig.areaColor = color;
+                                                        })
                                                         .controller(opt -> ColorControllerBuilder.create(opt)
                                                                 .allowAlpha(false))
                                                         .build()
