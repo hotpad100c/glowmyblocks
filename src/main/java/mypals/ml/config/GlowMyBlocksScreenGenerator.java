@@ -47,8 +47,7 @@ public class GlowMyBlocksScreenGenerator {
                                         .initial("")
                                         .build()
                                 ).option(Option.<Integer>createBuilder()
-                                        .name(Text.translatable("config.lucidity.render_mode.rendering_mode_block"))
-                                        .description(OptionDescription.of(Text.translatable("config.lucidity.render_mode.rendering_mode_block")))
+                                        .name(Text.translatable("config.blockOutline.render_mode"))
                                         .binding(0, () -> {
                                             instance.instance();
                                             return GlowMyBlocksConfig.glowBlockMode;
@@ -96,9 +95,9 @@ public class GlowMyBlocksScreenGenerator {
                                                         .build()
                                         ).option(
                                                 Option.<Boolean>createBuilder()
-                                                        .name(Text.translatable("config.option.spectator_select"))
+                                                        .name(Text.translatable("config.option.spectatorSelect"))
                                                         .description(OptionDescription.createBuilder()
-                                                                .text(Text.translatable("config.description.spectator_select"))
+                                                                .text(Text.translatable("config.description.spectatorSelect"))
                                                                 .build()
                                                         )
                                                         .binding(true, () -> {
@@ -112,7 +111,7 @@ public class GlowMyBlocksScreenGenerator {
                                                         .build()
                                         ).option(
                                                 Option.<Boolean>createBuilder()
-                                                        .name(Text.translatable("config.renderSelectionMarker"))
+                                                        .name(Text.translatable("config.option.renderSelectionMarker"))
                                                         .description(OptionDescription.createBuilder()
                                                                 .text(Text.translatable("config.description.renderSelectionMarker"))
                                                                 .build()

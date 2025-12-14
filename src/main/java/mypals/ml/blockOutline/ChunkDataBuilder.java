@@ -10,6 +10,8 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -24,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static mypals.ml.blockOutline.OutlineManager.*;
@@ -31,6 +35,11 @@ import static mypals.ml.config.GlowModeManager.shouldGlow;
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 
 public class ChunkDataBuilder {
+
+    private static final AtomicInteger totalBlocksProcessed = new AtomicInteger(0);
+    private static final AtomicInteger totalBlocksToProcess = new AtomicInteger(0);
+    private static final AtomicLong buildStartTime = new AtomicLong(0);
+
     private record BlockRenderData(
             BlockPos pos,
             BlockState state,
@@ -43,8 +52,10 @@ public class ChunkDataBuilder {
             List<BlockRenderData> blocks,
             Map<BlockPos, Color> blockEntities
     ) {}
+    private static final long REBUILD_DELAY_MS = 20;
 
-    private static final long REBUILD_DELAY_MS = 45;
+    private static final Map<ChunkSectionPos, CompletableFuture<Void>> activeRebuilds =
+            new ConcurrentHashMap<>();
 
     private static final Map<AreaBox, Map<ChunkSectionPos, Long>> pendingRebuilds = new ConcurrentHashMap<>();
 
@@ -52,9 +63,12 @@ public class ChunkDataBuilder {
 
     private static final ExecutorService WORKER_POOL = Util.getMainWorkerExecutor();
 
+    private static final AtomicBoolean rebuildCheckScheduled = new AtomicBoolean(false);
+
     private static final AtomicReference<CompletableFuture<Void>> currentBuildTask = new AtomicReference<>();
 
     public static void buildMeshesAsync(RenderTickCounter counter) {
+        GlowMyBlocks.needRebuildOutlineMesh = false;
         CompletableFuture<Void> oldTask = currentBuildTask.get();
         if (oldTask != null) {
             oldTask.cancel(true);
@@ -86,6 +100,19 @@ public class ChunkDataBuilder {
     private static Map<AreaBox, List<ChunkBuildResult>> collectAllAreaData(
             World world, List<AreaBox> areas) {
 
+        int totalBlocks = areas.stream()
+                .mapToInt(area -> {
+                    int dx = area.maxPos.getX() - area.minPos.getX() + 1;
+                    int dy = area.maxPos.getY() - area.minPos.getY() + 1;
+                    int dz = area.maxPos.getZ() - area.minPos.getZ() + 1;
+                    return dx * dy * dz;
+                })
+                .sum();
+
+        totalBlocksToProcess.set(totalBlocks);
+        totalBlocksProcessed.set(0);
+        buildStartTime.set(System.currentTimeMillis());
+
         Map<AreaBox, List<ChunkBuildResult>> result = new ConcurrentHashMap<>();
 
         areas.parallelStream().forEach(area -> {
@@ -94,6 +121,9 @@ public class ChunkDataBuilder {
             for (int x = area.minPos.getX(); x <= area.maxPos.getX(); x++) {
                 for (int y = area.minPos.getY(); y <= area.maxPos.getY(); y++) {
                     for (int z = area.minPos.getZ(); z <= area.maxPos.getZ(); z++) {
+
+                        totalBlocksProcessed.incrementAndGet();
+
                         BlockPos blockPos = new BlockPos(x, y, z);
                         BlockState state = world.getBlockState(blockPos);
 
@@ -144,7 +174,59 @@ public class ChunkDataBuilder {
         }
         return false;
     }
+    public record BuildProgress(
+            int processedBlocks,
+            int totalBlocks,
+            float percentage,
+            int blocksPerSecond,
+            int pendingChunks,
+            long elapsedMs
+    ) {
+        public boolean isBuilding() {
+            return processedBlocks < totalBlocks && totalBlocks > 0;
+        }
+        public String getStatusText() {
+            if (!isBuilding() && pendingChunks == 0) {
+                return "Empty";
+            }
 
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("Building: %.1f%% ", percentage));
+            sb.append(String.format("(%d/%d blocks) ", processedBlocks, totalBlocks));
+            sb.append(String.format("[%d blocks/s] ", blocksPerSecond));
+
+            if (pendingChunks > 0) {
+                sb.append(String.format("Pending: %d Sections", pendingChunks));
+            }
+
+            return sb.toString();
+        }
+    }
+    public static boolean isBuilding() {
+        return totalBlocksToProcess.get() > 0
+                && totalBlocksProcessed.get() < totalBlocksToProcess.get();
+    }
+    public static BuildProgress getBuildProgress() {
+        int processed = totalBlocksProcessed.get();
+        int total = totalBlocksToProcess.get();
+        long elapsed = System.currentTimeMillis() - buildStartTime.get();
+
+        float percentage = total > 0 ? (processed * 100.0f / total) : 0;
+        int blocksPerSecond = elapsed > 0 ? (int)(processed * 1000L / elapsed) : 0;
+
+        int pendingRebuilds = ChunkDataBuilder.pendingRebuilds.values().stream()
+                .mapToInt(Map::size)
+                .sum();
+
+        return new BuildProgress(
+                processed,
+                total,
+                percentage,
+                blocksPerSecond,
+                pendingRebuilds,
+                elapsed
+        );
+    }
     private static Map<AreaBox, Map<ChunkSectionPos, ChunkBufferData>> buildVertexData(
             Map<AreaBox, List<ChunkBuildResult>> areaDataMap,
             float delta,
@@ -231,8 +313,12 @@ public class ChunkDataBuilder {
     public static void rebuildChunkSectionAsync(AreaBox area, ChunkSectionPos sectionPos) {
         World world = MinecraftClient.getInstance().world;
         if (world == null) return;
+        CompletableFuture<Void> existingTask = activeRebuilds.get(sectionPos);
+        if (existingTask != null && !existingTask.isDone()) {
+            existingTask.cancel(true);
+        }
 
-        CompletableFuture
+        CompletableFuture<Void> rebuildTask = CompletableFuture
                 .supplyAsync(() -> {
                     List<BlockRenderData> blocks = new ArrayList<>();
                     Map<BlockPos, Color> blockEntities = new ConcurrentHashMap<>();
@@ -247,6 +333,11 @@ public class ChunkDataBuilder {
                     for (int x = startX; x <= endX; x++) {
                         for (int y = startY; y <= endY; y++) {
                             for (int z = startZ; z <= endZ; z++) {
+
+                                if (Thread.currentThread().isInterrupted()) {
+                                    throw new CancellationException("Task cancelled during data collection");
+                                }
+
                                 BlockPos blockPos = new BlockPos(x, y, z);
                                 BlockState state = world.getBlockState(blockPos);
 
@@ -320,34 +411,60 @@ public class ChunkDataBuilder {
                     }
                 }, MinecraftClient.getInstance())
 
-                .exceptionally(error -> {
-                    GlowMyBlocks.LOGGER.error("Failed to build mesh:", error);
-                    return null;
+                .whenComplete((result, error) -> {
+                    activeRebuilds.remove(sectionPos);
+                    if (error != null && !(error.getCause() instanceof CancellationException)) {
+                        GlowMyBlocks.LOGGER.error("Failed to build mesh:", error);
+                    }
                 });
+        activeRebuilds.put(sectionPos, rebuildTask);
     }
 
     public static void onBlockStateChange(BlockPos blockPos) {
         long currentTime = System.currentTimeMillis();
+        ChunkSectionPos changedSectionPos = ChunkSectionPos.from(blockPos);
 
         for (AreaBox area : selectedAreas) {
+            if (!isBlockInsideArea(blockPos, area)) {
+                continue;
+            }
+
+            Map<ChunkSectionPos, Long> areaRebuilds = pendingRebuilds.computeIfAbsent(
+                    area, k -> new ConcurrentHashMap<>()
+            );
+            areaRebuilds.put(changedSectionPos, currentTime + REBUILD_DELAY_MS);
+
             for (Direction direction : Direction.values()) {
-                BlockPos adjacentPos = blockPos.offset(direction);
-                if (isBlockInsideArea(adjacentPos, area)) {
-                    ChunkSectionPos adjacentSectionPos = ChunkSectionPos.from(adjacentPos);
+                if (isOnChunkSectionBoundary(blockPos, direction)) {
+                    BlockPos adjacentPos = blockPos.offset(direction);
 
-                    Map<ChunkSectionPos, Long> areaRebuilds = pendingRebuilds.computeIfAbsent(
-                            area, k -> new ConcurrentHashMap<>()
-                    );
+                    if (isBlockInsideArea(adjacentPos, area)) {
+                        ChunkSectionPos adjacentSectionPos = ChunkSectionPos.from(adjacentPos);
 
-                    areaRebuilds.put(adjacentSectionPos, currentTime + REBUILD_DELAY_MS);
+                        if (!adjacentSectionPos.equals(changedSectionPos)) {
+                            areaRebuilds.put(adjacentSectionPos, currentTime + REBUILD_DELAY_MS);
+                        }
+                    }
                 }
             }
         }
 
         scheduleRebuildCheck();
     }
+    private static boolean isOnChunkSectionBoundary(BlockPos pos, Direction direction) {
+        return switch (direction) {
+            case DOWN -> (pos.getY() & 15) == 0;
+            case UP -> (pos.getY() & 15) == 15;
+            case NORTH -> (pos.getZ() & 15) == 0;
+            case SOUTH -> (pos.getZ() & 15) == 15;
+            case WEST -> (pos.getX() & 15) == 0;
+            case EAST -> (pos.getX() & 15) == 15;
+        };
+    }
 
-    private static final AtomicBoolean rebuildCheckScheduled = new AtomicBoolean(false);
+    private static boolean isInSameChunkSection(BlockPos pos1, BlockPos pos2) {
+        return ChunkSectionPos.from(pos1).equals(ChunkSectionPos.from(pos2));
+    }
 
     private static void scheduleRebuildCheck() {
         if (rebuildCheckScheduled.compareAndSet(false, true)) {

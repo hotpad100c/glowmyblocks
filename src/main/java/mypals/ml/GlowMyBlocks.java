@@ -5,6 +5,10 @@ import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.config.GlowMyBlocksConfig;
 import mypals.ml.config.GlowMyBlocksKeybinds;
 import mypals.ml.config.GlowMyBlocksScreenGenerator;
+import mypals.ml.hud.BuildProgressHud;
+import mypals.ml.hud.ColorPickerScreen;
+import mypals.ml.wandSystem.SelectedManager;
+import mypals.ml.wandSystem.WandActionsManager;
 import mypals.ml.wandSystem.WandTooltipRenderer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -20,6 +24,7 @@ import net.minecraft.client.network.WorldLoadingState;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
@@ -28,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import static mypals.ml.blockOutline.OutlineManager.areaVbos;
 import static mypals.ml.config.GlowModeManager.resolveSelectedBlockStatesFromString;
+import static mypals.ml.config.GlowMyBlocksKeybinds.openColorPickerKey;
 import static mypals.ml.config.GlowMyBlocksKeybinds.openConfigKey;
 import static mypals.ml.wandSystem.SelectedManager.*;
 import static mypals.ml.wandSystem.WandActionsManager.wandActions;
@@ -73,7 +79,6 @@ public class GlowMyBlocks implements ModInitializer {
 			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			ChunkDataBuilder.shutdown();
 			areaVbos.values().forEach(data -> {
 				data.sectionData.values().forEach(chunk -> {
 					if (chunk.vbo != null) chunk.vbo.close();
@@ -83,6 +88,9 @@ public class GlowMyBlocks implements ModInitializer {
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			ChunkDataBuilder.shutdown();
+		});
+		HudRenderCallback.EVENT.register((ctx, tickDelta) -> {
+			BuildProgressHud.render(ctx);
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(client-> {
 			wandActions(client);

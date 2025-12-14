@@ -55,20 +55,16 @@ public class AreaBox {
         Vec3d v7 = new Vec3d(maxPos.getX()+1, maxPos.getY()+1, maxPos.getZ()+1);
         Vec3d v8 = new Vec3d(minPos.getX(), maxPos.getY()+1, maxPos.getZ()+1);
 
-
-        // 绘制底面四条边
         LineShape.draw(matrices,  v1, v2,  color, 1,true);
         LineShape.draw(matrices,  v2, v3,  color, 1,true);
         LineShape.draw(matrices,  v3, v4,  color, 1,true);
         LineShape.draw(matrices,  v4, v1,  color, 1,true);
 
-        // 绘制顶面四条边
         LineShape.draw(matrices,  v5, v6, color, 1,true);
         LineShape.draw(matrices,  v6, v7, color, 1,true);
         LineShape.draw(matrices,  v7, v8, color, 1,true);
         LineShape.draw(matrices,  v8, v5, color, 1,true);
 
-        // 绘制四条竖线
         LineShape.draw(matrices,  v1, v5, color, 1,true);
         LineShape.draw(matrices,  v2, v6, color, 1,true);
         LineShape.draw(matrices,  v3, v7, color, 1,true);

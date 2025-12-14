@@ -11,6 +11,8 @@ public class GlowMyBlocksKeybinds {
     public static KeyBinding addOutlineArea;
     public static KeyBinding deleteOutlineArea;
     public static KeyBinding openConfigKey;
+    public static KeyBinding openColorPickerKey;
+
     public static void init() {
         openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.blockOutline.config",
@@ -28,6 +30,13 @@ public class GlowMyBlocksKeybinds {
                 "key.blockOutline.removeSelection",
                 InputUtil.Type.KEYSYM,
                 GLFW_KEY_RIGHT_CONTROL,
+                "category.blockOutline"
+        ));
+
+        openColorPickerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.blockOutline.color_picker",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_LEFT_ALT,
                 "category.blockOutline"
         ));
     }

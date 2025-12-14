@@ -2,6 +2,7 @@ package mypals.ml.wandSystem;
 
 import mypals.ml.config.GlowModeManager;
 import mypals.ml.config.GlowMyBlocksConfig;
+import mypals.ml.hud.ColorPickerScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,8 +23,7 @@ import static mypals.ml.GlowMyBlocks.onConfigUpdated;
 import static mypals.ml.config.GlowModeManager.currentGlowRenderMode;
 import static mypals.ml.config.GlowModeManager.resolveSelectiveBlockRenderingMode;
 import static mypals.ml.config.GlowMyBlocksConfig.*;
-import static mypals.ml.config.GlowMyBlocksKeybinds.addOutlineArea;
-import static mypals.ml.config.GlowMyBlocksKeybinds.deleteOutlineArea;
+import static mypals.ml.config.GlowMyBlocksKeybinds.*;
 import static mypals.ml.wandSystem.IntersectionResolver.cutBox;
 import static mypals.ml.wandSystem.SelectedManager.isInsideArea;
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
@@ -156,6 +156,17 @@ public class WandActionsManager {
         if(client.world == null){return;}
         boolean shouldSelect = client.player.getMainHandStack().getItem() == SelectedManager.wand || (selectInSpectator && client.player.isSpectator());
         deleteMode = false;
+        if (MinecraftClient.getInstance().options.sprintKey.isPressed() && openColorPickerKey.isPressed()) {
+            if (client.currentScreen == null &&  client.player.getMainHandStack().getItem() == SelectedManager.wand ) {
+                client.setScreen(new ColorPickerScreen(
+                        null,
+                        GlowMyBlocksConfig.areaColor,
+                        color -> {
+                            GlowMyBlocksConfig.areaColor = color;
+                        }
+                ));
+            }
+        }
         if(selectCoolDown <= 0 && shouldSelect && client.player != null){
             if (deleteOutlineArea.isPressed()) {
                 deleteMode = true;
