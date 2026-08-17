@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 
 @Mixin(Item.class)
 public class ItemMixin {
-    @Inject(method = "isFoil", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "hasGlint", at = @At("HEAD"), cancellable = true)
     public void hasGlint(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if(stack != null && stack.getItem() == wand){
             cir.setReturnValue(true);

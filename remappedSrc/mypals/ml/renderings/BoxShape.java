@@ -1,12 +1,14 @@
 package mypals.ml.renderings;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.*;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -49,7 +51,7 @@ public class BoxShape{
             matrices.translate(x, y, z);
             Matrix4f modelViewMatrix = matrices.last().pose();
             Tesselator tessellator = Tesselator.getInstance();
-            BufferBuilder buffer = tessellator.begin(RenderType.debugQuads().mode(), RenderType.debugQuads().format());
+            BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
             float xMin = -length / 2;
             float xMax = length / 2;
@@ -100,16 +102,17 @@ public class BoxShape{
 
 
             if(seeThrough)
-                GlStateManager._disableDepthTest();
-            GlStateManager._enableBlend();
-            GlStateManager._disableCull();
-            MeshData meshData = buffer.buildOrThrow();
-            ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(64);
-            meshData.sortQuads(byteBufferBuilder,VertexSorting.DISTANCE_TO_ORIGIN);
-            RenderType.debugQuads().draw(meshData);
-            GlStateManager._enableDepthTest();
-            GlStateManager._enableCull();
-            GlStateManager._disableBlend();
+                RenderSystem.disableDepthTest();
+            RenderSystem.enableBlend();
+            RenderSystem.disableCull();
+
+            RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            BufferRenderer.drawWithGlobalProgram(buffer.buildOrThrow());
+
+            RenderSystem.enableDepthTest();
+            RenderSystem.enableCull();
+            RenderSystem.disableBlend();
             matrices.popPose();
         }
     }

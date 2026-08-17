@@ -1,11 +1,9 @@
 package mypals.ml.hud;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import mypals.ml.blockOutline.ChunkDataBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -52,9 +50,11 @@ public class BuildProgressHud {
             return;
         }
 
-        //client.getProfiler().push("glowMyBlocksProgress");
+        client.getProfiler().push("glowMyBlocksProgress");
 
-        GlStateManager._enableBlend();
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+
         int screenWidth = context.guiWidth();
         int x = screenWidth / 2 - BAR_WIDTH / 2;
         int y = 12;
@@ -76,15 +76,16 @@ public class BuildProgressHud {
             int detailsX = screenWidth / 2 - detailsWidth / 2;
             context.drawString(client.font, details, detailsX, y + BAR_HEIGHT + 2, detailColor);
         }
-        GlStateManager._disableBlend();
 
-        //client.getProfiler().pop();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+
+        client.getProfiler().pop();
     }
 
     private static void renderProgressBar(GuiGraphics context, int x, int y, float percent) {
         percent = Mth.clamp(percent, 0f, 100f);
         context.blitSprite(
-                RenderPipelines.GUI_TEXTURED,
                 BACKGROUND_TEXTURE,
                 BAR_WIDTH, BAR_HEIGHT,
                 0, 0,
@@ -94,7 +95,6 @@ public class BuildProgressHud {
         int progressWidth = (int)(BAR_WIDTH * percent / 100f);
         if (progressWidth > 0) {
             context.blitSprite(
-                    RenderPipelines.GUI_TEXTURED,
                     PROGRESS_TEXTURE,
                     BAR_WIDTH, BAR_HEIGHT,
                     0, 0,
@@ -102,7 +102,6 @@ public class BuildProgressHud {
                     progressWidth, BAR_HEIGHT
             );
             context.blitSprite(
-                    RenderPipelines.GUI_TEXTURED,
                     NOTCHED_PROGRESS_TEXTURE,
                     BAR_WIDTH, BAR_HEIGHT,
                     0, 0,

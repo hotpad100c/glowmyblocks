@@ -12,6 +12,8 @@
   },
   "client": [
     "MouseMixin",
-    "NetworkingHandlerMixin"
+    "NetworkingHandlerMixin",
+    "accessor.CompositeStateAccessor",
+    "accessor.CompositeRenderTypeAccessor"
   ]
 }

@@ -7,7 +7,6 @@ import mypals.ml.config.GlowMyBlocksKeybinds;
 import mypals.ml.config.GlowMyBlocksScreenGenerator;
 import mypals.ml.hud.BuildProgressHud;
 import mypals.ml.hud.ColorPickerScreen;
-import mypals.ml.renderings.GlowMyBlocksInformationRender;
 import mypals.ml.wandSystem.SelectedManager;
 import mypals.ml.wandSystem.WandActionsManager;
 import mypals.ml.wandSystem.WandTooltipRenderer;
@@ -73,8 +72,7 @@ public class GlowMyBlocks implements ModInitializer {
 			updateConfig();
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
-			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(), context.projectionMatrix());
-			GlowMyBlocksInformationRender.render(context.matrixStack(), context.tickCounter());
+			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(),context.projectionMatrix());
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			areaVbos.values().forEach(data -> {

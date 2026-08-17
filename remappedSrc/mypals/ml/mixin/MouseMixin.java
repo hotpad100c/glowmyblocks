@@ -18,7 +18,7 @@ import static mypals.ml.wandSystem.SelectedManager.wand;
 public class MouseMixin {
     private final Minecraft client = Minecraft.getInstance();
 
-    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "onMouseScroll", at = @At("HEAD"), cancellable = true)
     private void injectOnMouseScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
 
         if (window == this.client.getWindow().getWindow()) {

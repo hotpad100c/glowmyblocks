@@ -1,9 +1,11 @@
 package mypals.ml.blockOutline;
 
+import mypals.ml.config.GlowModeManager;
+import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
@@ -38,7 +40,7 @@ public class CustomFluidOutlineRenderer {
     private static boolean isSideCovered(Level world, Direction direction, float height, BlockPos pos, BlockState state) {
         if (state.canOcclude()) {
             VoxelShape voxelShape = Shapes.box(0.0, 0.0, 0.0, 1.0, height, 1.0);
-            VoxelShape voxelShape2 = state.getOcclusionShape();
+            VoxelShape voxelShape2 = state.getOcclusionShape(world, pos);
             return Shapes.blockOccludes(voxelShape, voxelShape2, direction);
         } else {
             return false;
@@ -68,11 +70,11 @@ public class CustomFluidOutlineRenderer {
         matrixStack.pushPose();
         matrixStack.translate(-pos.getX(), -pos.getY(), -pos.getZ());
 
-        lavaSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).particleIcon();
-        lavaSprites[1] = ModelBakery.LAVA_FLOW.sprite();
-        waterSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).particleIcon();
-        waterSprites[1] = ModelBakery.WATER_FLOW.sprite();
-        TextureAtlasSprite waterOverlaySprite = ModelBakery.WATER_OVERLAY.sprite();
+        lavaSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleSprite();
+        lavaSprites[1] = ModelLoader.LAVA_FLOW.getSprite();
+        waterSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).getParticleSprite();
+        waterSprites[1] = ModelLoader.WATER_FLOW.getSprite();
+        TextureAtlasSprite waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
 
 
         boolean bl = fluidState.is(FluidTags.LAVA);
@@ -171,7 +173,7 @@ public class CustomFluidOutlineRenderer {
 
                 float aj = (x + z + ab + ad) / 4.0F;
                 float af = (y + aa + ac + ae) / 4.0F;
-                float ag = sprites[0].uvShrinkRatio();
+                float ag = sprites[0].getAnimationFrameDelta();
                 x = Mth.lerp(ag, x, aj);
                 z = Mth.lerp(ag, z, aj);
                 ab = Mth.lerp(ag, ab, aj);

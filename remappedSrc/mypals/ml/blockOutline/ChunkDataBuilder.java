@@ -15,6 +15,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
@@ -299,10 +300,11 @@ public class ChunkDataBuilder {
 
                 ChunkRenderData chunkData = new ChunkRenderData();
 
-                GMBVertexBuffer vbo = new GMBVertexBuffer();
-
+                GMBVertexBuffer vbo = new GMBVertexBuffer(GMBVertexBuffer.Usage.DYNAMIC);
+                vbo.bind();
                 vbo.upload(bufferData.buffer());
-                //TODO
+                GMBVertexBuffer.unbind();
+
                 chunkData.vbo = vbo;
                 chunkData.blockEntities = bufferData.blockEntities();
 
@@ -402,10 +404,10 @@ public class ChunkDataBuilder {
                     }
 
                     if (bufferData != null && bufferData.buffer() != null) {
-                        GMBVertexBuffer vbo = new GMBVertexBuffer();
-
+                        GMBVertexBuffer vbo = new GMBVertexBuffer(GMBVertexBuffer.Usage.DYNAMIC);
+                        vbo.bind();
                         vbo.upload(bufferData.buffer());
-                        //TODO
+                        GMBVertexBuffer.unbind();
                         chunkData.vbo = vbo;
                         chunkData.blockEntities = bufferData.blockEntities();
                     } else {

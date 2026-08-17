@@ -1,20 +1,17 @@
 package mypals.ml.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.resource.ResourceHandle;
 import com.mojang.blaze3d.vertex.PoseStack;
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.renderings.GlowMyBlocksInformationRender;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.*;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,9 +27,11 @@ import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 
 @Mixin(LevelRenderer.class)
 public class GlowMyBlocksWorldRenderMixin {
+	@Shadow @Nullable public PostChain entityOutlinePostProcessor;
+
 	@SuppressWarnings({"InvalidInjectorMethodSignature", "MixinAnnotationTarget"})
 	@ModifyVariable(
-			method = "renderLevel",
+			method = "render",
 			at = @At(
 					value = "LOAD",
 					ordinal = 0
@@ -42,18 +41,18 @@ public class GlowMyBlocksWorldRenderMixin {
 	private boolean blockOutline$forceOutline(boolean bl3) {
 		return bl3 || !OutlineManager.targetedBlocks.isEmpty() || !selectedAreas.isEmpty();
 	}
-/*	@Inject(method = "renderLevel", at = @At(value = "INVOKE",target = "Lnet/minecraft/client/renderer/LevelRenderer;addLateDebugPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/world/phys/Vec3;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", ordinal = 0))
+	@Inject(method = "render", at = @At(value = "INVOKE",target = "Lnet/minecraft/client/render/WorldRenderer;renderChunkDebugInfo(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;Lnet/minecraft/client/render/Camera;)V", ordinal = 0))
 	private void blockOutline$render(CallbackInfo ci,
+						@Local PoseStack matrixStack,
 						@Local(argsOnly = true) DeltaTracker tickCounter,
 									 @Local(ordinal = 0, argsOnly = true) Matrix4f matrix4f2
 	) {
-		GlowMyBlocksInformationRender.render(new PoseStack(),tickCounter);
+		GlowMyBlocksInformationRender.render(matrixStack,tickCounter);
 	}
-*/
-	@Inject(method = "method_62214", at = @At(value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/OutlineBufferSource;endOutlineBatch()V"))
+	@Inject(method = "render", at = @At(value = "INVOKE",
+			target = "Lnet/minecraft/client/render/OutlineVertexConsumerProvider;draw()V"))
 	private void blockOutline$draw(
-			GpuBufferSlice gpuBufferSlice, DeltaTracker deltaTracker, Camera camera, ProfilerFiller profilerFiller, Matrix4f matrix4f, ResourceHandle resourceHandle, ResourceHandle resourceHandle2, boolean bl, Frustum frustum, ResourceHandle resourceHandle3, ResourceHandle resourceHandle4, CallbackInfo ci) {
+			DeltaTracker tickCounter, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
 		renderBlockOutlines(new PoseStack(), Minecraft.getInstance().getDeltaTracker(), new Matrix4f());
 	}
 }

@@ -1,7 +1,6 @@
 package mypals.ml.blockOutline;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -9,8 +8,9 @@ import mypals.ml.wandSystem.AreaBox;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.*;
 import net.minecraft.client.renderer.OutlineBufferSource;
-import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -18,6 +18,8 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.math.*;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -63,15 +65,14 @@ public class OutlineManager {
 
         GlStateManager._disableDepthTest();
 
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+
         for (AreaRenderData areaData : areaVbos.values()) {
             for (ChunkRenderData chunk : areaData.sectionData.values()) {
                 if (chunk.vbo != null) renderAreaVbo(chunk.vbo, cameraPos);
             }
         }
-        GlStateManager._enableDepthTest();
 
-
-        /*
         OutlineBufferSource consumer = mc.levelRenderer.renderBuffers.outlineBufferSource();
         RandomSource random = mc.getCameraEntity().getRandom();
 
@@ -81,10 +82,7 @@ public class OutlineManager {
         tempStack.scale(0.0f, 0.0f, 0.0f);
         Minecraft.getInstance().getBlockRenderer().renderBatched(Blocks.STONE.defaultBlockState(),
                 new BlockPos(0, 0, 0), Minecraft.getInstance().level,tempStack,
-                consumer.getBuffer(RenderType.outline(TextureAtlas.LOCATION_BLOCKS)),true,
-                new ArrayList<>());
-
-         */
+                consumer.getBuffer(RenderType.outline(TextureAtlas.LOCATION_BLOCKS)),true,random );
     }
 
     public static void renderBlockEntities(PoseStack stack, DeltaTracker counter, Matrix4f projectionMatrix) {
@@ -104,18 +102,23 @@ public class OutlineManager {
     }
 
     private static void renderAreaVbo(GMBVertexBuffer vbo, Vec3 cameraPos) {
+        vbo.bind();
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().translate(
                 (float) -cameraPos.x,
                 (float) -cameraPos.y,
                 (float) -cameraPos.z
         );
+        RenderSystem.applyModelViewMatrix();
 
-        //Minecraft.getInstance().levelRenderer.entityOutlineTarget().beginWrite(false);
-        //TODO
-        vbo.draw(RenderSystem.getModelViewStack(), Sheets.solidBlockSheet());
+        Minecraft.getInstance().levelRenderer.entityOutlineTarget().beginWrite(false);
+
+        vbo.draw(RenderSystem.getModelViewStack(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+
+        GMBVertexBuffer.unbind();
 
         RenderSystem.getModelViewStack().popMatrix();
+        RenderSystem.applyModelViewMatrix();
     }
 
     private static void renderAreaBlockEntities(PoseStack stack, Map<BlockPos, Color> blockEntities,

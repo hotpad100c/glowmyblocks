@@ -1,6 +1,5 @@
 package mypals.ml.wandSystem;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.jetbrains.annotations.Nullable;
@@ -107,9 +106,9 @@ public class WandTooltipRenderer {
         x = centerX - maxTextWidth / 2;
         for (ToolTipItem item : hudItems) {
             if (item.icon != null) {
-                GlStateManager._enableBlend();
+                RenderSystem.enableBlend();
                 context.blit(item.icon, x, y, 0, 0, 16, 16, 16, 16);
-                GlStateManager._disableBlend();
+                RenderSystem.disableBlend();
             }
 
             int textX = x + (item.icon != null ? 20 : 0);
@@ -133,9 +132,9 @@ public class WandTooltipRenderer {
 
         int x = 0;
         int y = centerY - 60;
-        GlStateManager._enableBlend();
+        RenderSystem.enableBlend();
         context.blit(ResourceLocation.fromNamespaceAndPath(MOD_ID, currentGlowRenderMode.getIcon()), x, y, 0, 0, iconWidth, iconWidth, iconWidth, iconWidth);
-        GlStateManager._disableBlend();
+        RenderSystem.disableBlend();
         context.drawString(client.font, Component.translatable(currentGlowRenderMode.getTranslationKey()), x+iconWidth+2, y+(iconWidth/2), 0xFFFFFFE0, true);
 
     }

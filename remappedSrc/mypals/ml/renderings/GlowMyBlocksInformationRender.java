@@ -1,14 +1,14 @@
 package mypals.ml.renderings;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import mypals.ml.wandSystem.AreaBox;
 import mypals.ml.wandSystem.WandActionsManager;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.render.*;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShapeRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.BlockHitResult;
@@ -33,15 +33,13 @@ public class GlowMyBlocksInformationRender {
 
     public static void render(PoseStack matrixStack, DeltaTracker counter){
         if(Minecraft.getInstance().player != null && Minecraft.getInstance().gameRenderer.getMainCamera().isInitialized()) {
-            drawSelectedAreas(matrixStack, counter.getGameTimeDeltaPartialTick(false));
+            drawSelectedAreas(matrixStack, counter.getTickDelta(false));
         }
     }
 
     private static void drawSelectedAreas(PoseStack matrixStack, float tickDelta){
         if (Minecraft.getInstance().player != null && (Minecraft.getInstance().player.getMainHandItem().getItem() == wand || (Minecraft.getInstance().player.isSpectator() && selectInSpectator))) {
 
-
-            GlStateManager._depthMask(false);
             HitResult result = Minecraft.getInstance().hitResult;
             BlockPos lookingAt = BlockPos.containing(result.getLocation());
             if(renderSelectionMarker) {
@@ -62,8 +60,6 @@ public class GlowMyBlocksInformationRender {
                     }
                 }
             }
-
-            GlStateManager._depthMask(true);
         }
 
     }
@@ -98,7 +94,7 @@ public class GlowMyBlocksInformationRender {
         VertexConsumer consumer = client.renderBuffers().bufferSource().getBuffer(RenderType.lines());
         matrices.translate(x, y, z);
 
-        ShapeRenderer.renderLineBox(matrices, consumer, 0, 0, 0, pos.getX(), pos.getY(), pos.getZ(), 1, 1, 1, 1, 0, 0, 0);
+        LevelRenderer.drawBox(matrices, consumer, 0, 0, 0, pos.getX(), pos.getY(), pos.getZ(), 1, 1, 1, 1, 0, 0, 0);
 
         matrices.popPose();
     }

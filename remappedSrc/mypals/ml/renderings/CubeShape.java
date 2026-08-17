@@ -1,10 +1,14 @@
 package mypals.ml.renderings;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.render.*;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -41,6 +45,10 @@ public class CubeShape {
         float lastTickPosZ = (float) cameraPos.z();
 
 
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
 
         Set<BlockPos> cubePositions = cubes.keySet();
@@ -49,21 +57,21 @@ public class CubeShape {
         java.util.List<CubeShape> seeThroughCubes = cubes.values().stream().filter(cube -> cube.seeThrough).collect(Collectors.toList());
 
         if (!opaqueCubes.isEmpty()) {
-            BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             drawCubes(bufferBuilder, matrices, opaqueCubes, sizeAdd, tickDelta, cameraPos, lastTickPosX, lastTickPosY, lastTickPosZ, cubePositions);
-            GlStateManager._enableDepthTest();
-
-            RenderType.debugQuads().draw(bufferBuilder.buildOrThrow());
+            RenderSystem.enableDepthTest();
+            BufferRenderer.drawWithGlobalProgram(bufferBuilder.buildOrThrow());
         }
 
         if (!seeThroughCubes.isEmpty()) {
-            BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             drawCubes(bufferBuilder, matrices, seeThroughCubes, sizeAdd, tickDelta, cameraPos, lastTickPosX, lastTickPosY, lastTickPosZ, cubePositions);
-            GlStateManager._disableDepthTest();
-            RenderType.debugQuads().draw(bufferBuilder.buildOrThrow());
-            GlStateManager._enableDepthTest();
+            RenderSystem.disableDepthTest();
+            BufferRenderer.drawWithGlobalProgram(bufferBuilder.buildOrThrow());
+            RenderSystem.enableDepthTest();
         }
 
+        RenderSystem.disableBlend();
         matrices.popPose();
     }
 
@@ -128,6 +136,7 @@ public class CubeShape {
                 bufferBuilder.addVertex(modelViewMatrix, minOffset, maxOffset, minOffset).setColor(red, green, blue, cube.alpha);
             }
 
+            // 南表面
             if (!hasSouth) {
                 bufferBuilder.addVertex(modelViewMatrix, minOffset, maxOffset, maxOffset).setColor(red, green, blue, cube.alpha);
                 bufferBuilder.addVertex(modelViewMatrix, maxOffset, maxOffset, maxOffset).setColor(red, green, blue, cube.alpha);
@@ -155,8 +164,12 @@ public class CubeShape {
         matrices.translate(x, y, z);
         Matrix4f modelViewMatrix = matrices.last().pose();
 
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.DrawMode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         float minOffset = -0.001f - sizeAdd;
         float maxOffset = 1.001f + sizeAdd;
 
@@ -189,13 +202,10 @@ public class CubeShape {
         bufferBuilder.addVertex(modelViewMatrix, maxOffset, minOffset, maxOffset).setColor(red, green, blue, alpha);
         bufferBuilder.addVertex(modelViewMatrix, minOffset, minOffset, maxOffset).setColor(red, green, blue, alpha);
 
-        if (seeThrough) GlStateManager._disableDepthTest();
-
-        MeshData meshData = bufferBuilder.buildOrThrow();
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(64);
-        meshData.sortQuads(byteBufferBuilder,VertexSorting.DISTANCE_TO_ORIGIN);
-        RenderType.debugQuads().draw(meshData);
-        GlStateManager._enableDepthTest();
+        if (seeThrough) RenderSystem.disableDepthTest();
+        BufferRenderer.drawWithGlobalProgram(bufferBuilder.buildOrThrow());
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
         matrices.popPose();
     }
 }

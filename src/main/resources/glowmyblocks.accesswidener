@@ -1,11 +1,15 @@
 accessWidener v2 named
-accessible field net/minecraft/client/render/Tessellator allocator Lnet/minecraft/client/util/BufferAllocator;
-accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer clearCount I
-accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer offset I
-accessible field net/minecraft/client/render/WorldRenderer entityOutlinePostProcessor Lnet/minecraft/client/gl/PostEffectProcessor;
-accessible field net/minecraft/client/network/ClientPlayNetworkHandler worldLoadingState Lnet/minecraft/client/network/WorldLoadingState;
-accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer size I
-accessible field net/minecraft/client/render/BuiltBuffer buffer Lnet/minecraft/client/util/BufferAllocator$CloseableBuffer;
-accessible field net/minecraft/client/render/WorldRenderer entityOutlinesFramebuffer Lnet/minecraft/client/gl/Framebuffer;
-accessible field net/minecraft/client/gl/VertexBuffer drawMode Lnet/minecraft/client/render/VertexFormat$DrawMode;
-accessible field net/minecraft/client/render/WorldRenderer bufferBuilders Lnet/minecraft/client/render/BufferBuilderStorage;
+
+
+accessible field net/minecraft/client/multiplayer/ClientPacketListener levelLoadStatusManager Lnet/minecraft/client/multiplayer/LevelLoadStatusManager;
+accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+
+#accessible field net/minecraft/client/render/Tessellator allocator Lnet/minecraft/client/util/BufferAllocator;
+#accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer clearCount I
+#accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer offset I
+#accessible field net/minecraft/client/render/WorldRenderer entityOutlinePostProcessor Lnet/minecraft/client/gl/PostEffectProcessor;
+#accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer size I
+#accessible field net/minecraft/client/render/BuiltBuffer buffer Lnet/minecraft/client/util/BufferAllocator$CloseableBuffer;
+#accessible field net/minecraft/client/render/WorldRenderer entityOutlinesFramebuffer Lnet/minecraft/client/gl/Framebuffer;
+#accessible field net/minecraft/client/gl/VertexBuffer drawMode Lnet/minecraft/client/render/VertexFormat$DrawMode;
+#accessible field net/minecraft/client/render/WorldRenderer bufferBuilders Lnet/minecraft/client/render/BufferBuilderStorage;

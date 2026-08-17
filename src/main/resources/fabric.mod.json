@@ -4,6 +4,7 @@
 	"version": "${version}",
 	"name": "GlowMyBlocks",
 	"description": "Let your blocks glow!",
+	"accessWidener": "glowmyblocks.accesswidener",
 	"authors": [
 		"Ryan100c"
 	],
@@ -25,13 +26,12 @@
 		"glowmyblocks.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.15.2",
-		"yet_another_config_lib_v3": "~3.6.1+1.21.1-fabric",
-		"minecraft": "~1.21",
+		"fabricloader": "*",
+		"yet_another_config_lib_v3": "*",
+		"minecraft": "~1.21.6",
 		"java": ">=21",
 		"fabric-api": "*"
 	},
-	"accessWidener": "glowmyblocks.accesswidener",
 	"suggests": {
 		"another-mod": "*"
 	}
