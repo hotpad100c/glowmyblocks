@@ -1,59 +1,58 @@
 package mypals.ml.mixin;
 
-import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.ResourceHandle;
 import com.mojang.blaze3d.vertex.PoseStack;
 import mypals.ml.blockOutline.OutlineManager;
-import mypals.ml.renderings.GlowMyBlocksInformationRender;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.util.profiling.ProfilerFiller;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static mypals.ml.GlowMyBlocks.renderBlockEntitiesOutlines;
 import static mypals.ml.GlowMyBlocks.renderBlockOutlines;
 import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 
 @Mixin(LevelRenderer.class)
 public class GlowMyBlocksWorldRenderMixin {
-	@SuppressWarnings({"InvalidInjectorMethodSignature", "MixinAnnotationTarget"})
-	@ModifyVariable(
-			method = "renderLevel",
-			at = @At(
-					value = "LOAD",
-					ordinal = 0
-			),
-			ordinal = 3
-	)
-	private boolean blockOutline$forceOutline(boolean bl3) {
-		return bl3 || !OutlineManager.targetedBlocks.isEmpty() || !selectedAreas.isEmpty();
+
+	/**
+	 * Keeps the entity-outline pass alive while we have outlines to draw.
+	 *
+	 * <p>Up to 1.21.6 this was a {@code @ModifyVariable} on a local boolean inside renderLevel,
+	 * pinned by {@code ordinal}. 1.21.9 moved the flag onto {@link LevelRenderState}, which is both
+	 * a stabler target and the actual gate: renderLevel and addMainPass read
+	 * {@code haveGlowingEntities} to decide whether to allocate the outline target and run the
+	 * post chain, and extractVisibleEntities is the last thing to write it.
+	 */
+	@Inject(method = "extractVisibleEntities", at = @At("TAIL"))
+	private void blockOutline$forceOutline(Camera camera, Frustum frustum, DeltaTracker deltaTracker,
+										   LevelRenderState levelRenderState, CallbackInfo ci) {
+		if (!OutlineManager.targetedBlocks.isEmpty() || !selectedAreas.isEmpty()) {
+			levelRenderState.haveGlowingEntities = true;
+		}
 	}
-/*	@Inject(method = "renderLevel", at = @At(value = "INVOKE",target = "Lnet/minecraft/client/renderer/LevelRenderer;addLateDebugPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/world/phys/Vec3;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", ordinal = 0))
-	private void blockOutline$render(CallbackInfo ci,
-						@Local(argsOnly = true) DeltaTracker tickCounter,
-									 @Local(ordinal = 0, argsOnly = true) Matrix4f matrix4f2
-	) {
-		GlowMyBlocksInformationRender.render(new PoseStack(),tickCounter);
-	}
-*/
+
+	/**
+	 * Draws the outline meshes inside renderLevel's entity/outline pass lambda, right where vanilla
+	 * finishes its own outline batch.
+	 *
+	 * <p>method_62214 keeps that intermediary name on 1.21.11, but its parameters changed: the
+	 * DeltaTracker/Camera/Frustum triple was folded into a single LevelRenderState.
+	 */
 	@Inject(method = "method_62214", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/renderer/OutlineBufferSource;endOutlineBatch()V"))
 	private void blockOutline$draw(
-			GpuBufferSlice gpuBufferSlice, DeltaTracker deltaTracker, Camera camera, ProfilerFiller profilerFiller, Matrix4f matrix4f, ResourceHandle resourceHandle, ResourceHandle resourceHandle2, boolean bl, Frustum frustum, ResourceHandle resourceHandle3, ResourceHandle resourceHandle4, CallbackInfo ci) {
+			GpuBufferSlice gpuBufferSlice, LevelRenderState levelRenderState, ProfilerFiller profilerFiller,
+			Matrix4f matrix4f, ResourceHandle resourceHandle, ResourceHandle resourceHandle2, boolean bl,
+			ResourceHandle resourceHandle3, ResourceHandle resourceHandle4, CallbackInfo ci) {
 		renderBlockOutlines(new PoseStack(), Minecraft.getInstance().getDeltaTracker(), new Matrix4f());
 	}
 }

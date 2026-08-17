@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ClientWorldMixin",
+    "GlowMyBlocksBlockEntityOutlineMixin",
     "GlowMyBlocksWorldRenderMixin",
     "ItemMixin"
   ],
@@ -12,8 +13,6 @@
   },
   "client": [
     "MouseMixin",
-    "NetworkingHandlerMixin",
-    "accessor.CompositeStateAccessor",
-    "accessor.CompositeRenderTypeAccessor"
+    "NetworkingHandlerMixin"
   ]
 }

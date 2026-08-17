@@ -11,10 +11,11 @@ import mypals.ml.blockOutline.OutlineManager.AreaRenderData;
 import mypals.ml.blockOutline.OutlineManager.ChunkBufferData;
 import mypals.ml.blockOutline.OutlineManager.ChunkRenderData;
 import mypals.ml.wandSystem.AreaBox;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
@@ -48,7 +49,8 @@ public class ChunkDataBuilder {
             BlockPos pos,
             BlockState state,
             Color color,
-            boolean hasVisibleFace
+            /** Bit per {@link Direction#ordinal()}; a set bit means that face is not occluded. */
+            int visibleFaces
     ) {}
 
     private record ChunkBuildResult(
@@ -58,7 +60,11 @@ public class ChunkDataBuilder {
     ) {}
     private static final long REBUILD_DELAY_MS = 20;
 
-    private static final Map<SectionPos, CompletableFuture<Void>> activeRebuilds =
+    /** Identifies an in-flight rebuild. Keyed by area too: two areas can share a section, and
+     *  keying on the section alone made each one cancel the other's rebuild. */
+    private record RebuildKey(AreaBox area, SectionPos sectionPos) {}
+
+    private static final Map<RebuildKey, CompletableFuture<Void>> activeRebuilds =
             new ConcurrentHashMap<>();
 
     private static final Map<AreaBox, Map<SectionPos, Long>> pendingRebuilds = new ConcurrentHashMap<>();
@@ -140,11 +146,11 @@ public class ChunkDataBuilder {
                         );
 
                         if (shouldGlow(blockPos, state, area)) {
-                            boolean hasVisibleFace = checkVisibleFaces(world, blockPos, area);
+                            int visibleFaces = checkVisibleFaces(world, blockPos, area);
 
-                            if (hasVisibleFace) {
+                            if (visibleFaces != 0) {
                                 chunkResult.blocks.add(new BlockRenderData(
-                                        blockPos, state, area.color, true
+                                        blockPos, state, area.color, visibleFaces
                                 ));
                             }
 
@@ -165,18 +171,34 @@ public class ChunkDataBuilder {
         return result;
     }
 
-    private static boolean checkVisibleFaces(Level world, BlockPos blockPos, AreaBox area) {
+    /**
+     * Returns a bitmask of the faces of {@code blockPos} that are not hidden by another block of
+     * the same selection, one bit per {@link Direction#ordinal()}. Zero means the block is fully
+     * enclosed and contributes no geometry at all.
+     *
+     * <p>Only faces pointing at a neighbour that is itself selected and a full block get culled --
+     * a face pointing out of the selection stays, so the selection keeps a closed shell.
+     */
+    private static int checkVisibleFaces(Level world, BlockPos blockPos, AreaBox area) {
+        int visible = 0;
         for (Direction direction : Direction.values()) {
             BlockPos offsetPos = blockPos.relative(direction);
 
-            boolean isSideBlocked = isBlockInsideArea(offsetPos, area)
-                    && world.getBlockState(offsetPos).isCollisionShapeFullBlock(world, offsetPos);
+            // The neighbour must actually be drawn by us to hide this face. Testing only "inside the
+            // area and a full block" would punch holes in the shell under the selective glow modes,
+            // where a neighbour can be inside the area yet filtered out and never rendered.
+            boolean isSideBlocked = false;
+            if (isBlockInsideArea(offsetPos, area)) {
+                BlockState neighbour = world.getBlockState(offsetPos);
+                isSideBlocked = neighbour.isCollisionShapeFullBlock(world, offsetPos)
+                        && shouldGlow(offsetPos, neighbour, area);
+            }
 
             if (!isSideBlocked) {
-                return true;
+                visible |= 1 << direction.ordinal();
             }
         }
-        return false;
+        return visible;
     }
     public record BuildProgress(
             int processedBlocks,
@@ -247,8 +269,8 @@ public class ChunkDataBuilder {
             chunks.parallelStream().forEach(chunk -> {
                 if (chunk.blocks.isEmpty()) return;
 
-                BufferBuilder buffer = new BufferBuilder(new ByteBufferBuilder(2048),
-                        VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+                RenderType layer = OutlineManager.outlineLayer();
+                BufferBuilder buffer = new BufferBuilder(new ByteBufferBuilder(2048), layer.mode(), layer.format());
 
                 PoseStack stack = new PoseStack();
 
@@ -262,7 +284,8 @@ public class ChunkDataBuilder {
 
                     renderBlockOutline(
                             new AbstractMap.SimpleEntry<>(blockData.pos, blockData.state),
-                            delta, camera, stack, blockData.color(), RandomSource.create(), buffer
+                            delta, camera, stack, blockData.color(), RandomSource.create(), buffer,
+                            blockData.visibleFaces()
                     );
                 }
 
@@ -311,12 +334,15 @@ public class ChunkDataBuilder {
 
             areaVbos.put(area, renderData);
         }
+
+        OutlineManager.refreshBlockEntityIndex();
     }
 
     public static void rebuildChunkSectionAsync(AreaBox area, SectionPos sectionPos) {
         Level world = Minecraft.getInstance().level;
         if (world == null) return;
-        CompletableFuture<Void> existingTask = activeRebuilds.get(sectionPos);
+        RebuildKey rebuildKey = new RebuildKey(area, sectionPos);
+        CompletableFuture<Void> existingTask = activeRebuilds.get(rebuildKey);
         if (existingTask != null && !existingTask.isDone()) {
             existingTask.cancel(true);
         }
@@ -346,8 +372,9 @@ public class ChunkDataBuilder {
 
                                 if (state.isAir() || !shouldGlow(blockPos, state, area)) continue;
 
-                                if (checkVisibleFaces(world, blockPos, area)) {
-                                    blocks.add(new BlockRenderData(blockPos, state, area.color, true));
+                                int visibleFaces = checkVisibleFaces(world, blockPos, area);
+                                if (visibleFaces != 0) {
+                                    blocks.add(new BlockRenderData(blockPos, state, area.color, visibleFaces));
                                 }
 
                                 if (state.getBlock() instanceof BaseEntityBlock) {
@@ -369,8 +396,8 @@ public class ChunkDataBuilder {
                     Camera camera = mc.gameRenderer.getMainCamera();
                     float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 
-                    BufferBuilder buffer = new BufferBuilder(new ByteBufferBuilder(2048),
-                            VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+                    RenderType layer = OutlineManager.outlineLayer();
+                    BufferBuilder buffer = new BufferBuilder(new ByteBufferBuilder(2048), layer.mode(), layer.format());
 
                     PoseStack stack = new PoseStack();
 
@@ -379,7 +406,8 @@ public class ChunkDataBuilder {
                         stack.translate(blockData.pos.getX(), blockData.pos.getY(), blockData.pos.getZ());
                         renderBlockOutline(
                                 new AbstractMap.SimpleEntry<>(blockData.pos, blockData.state),
-                                delta, camera, stack, blockData.color, RandomSource.create(), buffer
+                                delta, camera, stack, blockData.color, RandomSource.create(), buffer,
+                                blockData.visibleFaces()
                         );
                     }
 
@@ -405,22 +433,23 @@ public class ChunkDataBuilder {
                         GMBVertexBuffer vbo = new GMBVertexBuffer();
 
                         vbo.upload(bufferData.buffer());
-                        //TODO
                         chunkData.vbo = vbo;
                         chunkData.blockEntities = bufferData.blockEntities();
                     } else {
                         chunkData.vbo = null;
                         chunkData.blockEntities = new ConcurrentHashMap<>();
                     }
+
+                    OutlineManager.refreshBlockEntityIndex();
                 }, Minecraft.getInstance())
 
                 .whenComplete((result, error) -> {
-                    activeRebuilds.remove(sectionPos);
+                    activeRebuilds.remove(rebuildKey);
                     if (error != null && !(error.getCause() instanceof CancellationException)) {
                         GlowMyBlocks.LOGGER.error("Failed to build mesh:", error);
                     }
                 });
-        activeRebuilds.put(sectionPos, rebuildTask);
+        activeRebuilds.put(rebuildKey, rebuildTask);
     }
 
     public static void onBlockStateChange(BlockPos blockPos) {
@@ -472,8 +501,19 @@ public class ChunkDataBuilder {
     private static void scheduleRebuildCheck() {
         if (rebuildCheckScheduled.compareAndSet(false, true)) {
             rebuildScheduler.schedule(() -> {
-                processScheduledRebuilds();
-                rebuildCheckScheduled.set(false);
+                try {
+                    processScheduledRebuilds();
+                } catch (Throwable t) {
+                    GlowMyBlocks.LOGGER.error("Failed to process scheduled rebuilds:", t);
+                } finally {
+                    // Must be cleared before re-arming below, otherwise that call's CAS fails and
+                    // any section that was not yet due is stranded until the next block change.
+                    rebuildCheckScheduled.set(false);
+                }
+
+                if (!pendingRebuilds.isEmpty()) {
+                    scheduleRebuildCheck();
+                }
             }, REBUILD_DELAY_MS, TimeUnit.MILLISECONDS);
         }
     }
@@ -497,10 +537,7 @@ public class ChunkDataBuilder {
                 pendingRebuilds.remove(area);
             }
         });
-
-        if (!pendingRebuilds.isEmpty()) {
-            scheduleRebuildCheck();
-        }
+        // Re-arming happens in scheduleRebuildCheck's task, after the guard flag is cleared.
     }
 
     public static void shutdown() {

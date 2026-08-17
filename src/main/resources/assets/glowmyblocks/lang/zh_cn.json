@@ -20,6 +20,7 @@
   "config.wand.addSpecific": "右键：添加特定方块/实体。",
   "config.wand.addArea": "左键：添加选定区域。",
   "category.blockOutline": "光耀千万块 按键设置",
+  "key.category.glowmyblocks.blockoutline": "光耀千万块 按键设置",
   "key.blockOutline.addSelection": "添加选区",
   "key.blockOutline.config": "开启设置GUI",
   "key.blockOutline.removeSelection": "切除选区",

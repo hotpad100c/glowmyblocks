@@ -20,6 +20,7 @@
   "config.wand.addSpecific": "Right-click: Add specific block/entity.",
   "config.wand.addArea": "Left-click: Add selected area.",
   "category.blockOutline": "GlowMyBlocks Hotkeys",
+  "key.category.glowmyblocks.blockoutline": "GlowMyBlocks Hotkeys",
   "key.blockOutline.addSelection": "Add Selection Key",
   "key.blockOutline.config": "Open Config GUI",
   "key.blockOutline.removeSelection": "Remove Selection Key",

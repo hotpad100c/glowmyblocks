@@ -21,7 +21,7 @@ public class MouseMixin {
     @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
     private void injectOnMouseScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
 
-        if (window == this.client.getWindow().getWindow()) {
+        if (window == this.client.getWindow().handle()) {
             if (this.client.player != null) {
                 ItemStack mainHand = this.client.player.getMainHandItem();
                 if (((mainHand.is(wand) || (this.client.player.isSpectator() && GlowMyBlocksConfig.selectInSpectator))

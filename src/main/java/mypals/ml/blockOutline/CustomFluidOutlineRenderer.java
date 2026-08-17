@@ -3,6 +3,7 @@ package mypals.ml.blockOutline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.MaterialSet;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -68,11 +69,15 @@ public class CustomFluidOutlineRenderer {
         matrixStack.pushPose();
         matrixStack.translate(-pos.getX(), -pos.getY(), -pos.getZ());
 
+        // 1.21.9+: Material#sprite() is gone; materials are resolved through a MaterialSet,
+        // and Minecraft's AtlasManager is one.
+        MaterialSet materials = Minecraft.getInstance().getAtlasManager();
+
         lavaSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).particleIcon();
-        lavaSprites[1] = ModelBakery.LAVA_FLOW.sprite();
+        lavaSprites[1] = materials.get(ModelBakery.LAVA_FLOW);
         waterSprites[0] = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).particleIcon();
-        waterSprites[1] = ModelBakery.WATER_FLOW.sprite();
-        TextureAtlasSprite waterOverlaySprite = ModelBakery.WATER_OVERLAY.sprite();
+        waterSprites[1] = materials.get(ModelBakery.WATER_FLOW);
+        TextureAtlasSprite waterOverlaySprite = materials.get(ModelBakery.WATER_OVERLAY);
 
 
         boolean bl = fluidState.is(FluidTags.LAVA);
@@ -169,17 +174,9 @@ public class CustomFluidOutlineRenderer {
                     ae = sprite.getV(0.5F + (-ah - ag));
                 }
 
-                float aj = (x + z + ab + ad) / 4.0F;
-                float af = (y + aa + ac + ae) / 4.0F;
-                float ag = sprites[0].uvShrinkRatio();
-                x = Mth.lerp(ag, x, aj);
-                z = Mth.lerp(ag, z, aj);
-                ab = Mth.lerp(ag, ab, aj);
-                ad = Mth.lerp(ag, ad, aj);
-                y = Mth.lerp(ag, y, af);
-                aa = Mth.lerp(ag, aa, af);
-                ac = Mth.lerp(ag, ac, af);
-                ae = Mth.lerp(ag, ae, af);
+                // 1.21.11 dropped the UV-shrink lerp that used to sit here (and removed
+                // TextureAtlasSprite#uvShrinkRatio); sprites carry explicit padding now, so vanilla's
+                // LiquidBlockRenderer uses the UVs as-is.
                 int ak = getLight(world, pos);
                 vertex(vertexConsumer, matrix, s + 0.0F, t + p, u + 0.0F, r, g, b, x, y, ak);
                 vertex(vertexConsumer, matrix, s + 0.0F, t + rr, u + 1.0F, r, g, b, z, aa, ak);

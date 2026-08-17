@@ -4,7 +4,8 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -35,7 +36,7 @@ public class CubeShape {
         }
 
         matrices.pushPose();
-        Vec3 cameraPos = camera.getPosition();
+        Vec3 cameraPos = camera.position();
         float lastTickPosX = (float) cameraPos.x();
         float lastTickPosY = (float) cameraPos.y();
         float lastTickPosZ = (float) cameraPos.z();
@@ -53,14 +54,14 @@ public class CubeShape {
             drawCubes(bufferBuilder, matrices, opaqueCubes, sizeAdd, tickDelta, cameraPos, lastTickPosX, lastTickPosY, lastTickPosZ, cubePositions);
             GlStateManager._enableDepthTest();
 
-            RenderType.debugQuads().draw(bufferBuilder.buildOrThrow());
+            RenderTypes.debugQuads().draw(bufferBuilder.buildOrThrow());
         }
 
         if (!seeThroughCubes.isEmpty()) {
             BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             drawCubes(bufferBuilder, matrices, seeThroughCubes, sizeAdd, tickDelta, cameraPos, lastTickPosX, lastTickPosY, lastTickPosZ, cubePositions);
             GlStateManager._disableDepthTest();
-            RenderType.debugQuads().draw(bufferBuilder.buildOrThrow());
+            RenderTypes.debugQuads().draw(bufferBuilder.buildOrThrow());
             GlStateManager._enableDepthTest();
         }
 
@@ -147,7 +148,7 @@ public class CubeShape {
         }
 
         matrices.pushPose();
-        Vec3 cameraPos = camera.getPosition();
+        Vec3 cameraPos = camera.position();
         float x = (float) (pos.getX() - Mth.lerp(tickDelta, cameraPos.x(), cameraPos.x()));
         float y = (float) (pos.getY() - Mth.lerp(tickDelta, cameraPos.y(), cameraPos.y()));
         float z = (float) (pos.getZ() - Mth.lerp(tickDelta, cameraPos.z(), cameraPos.z()));
@@ -194,7 +195,7 @@ public class CubeShape {
         MeshData meshData = bufferBuilder.buildOrThrow();
         ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(64);
         meshData.sortQuads(byteBufferBuilder,VertexSorting.DISTANCE_TO_ORIGIN);
-        RenderType.debugQuads().draw(meshData);
+        RenderTypes.debugQuads().draw(meshData);
         GlStateManager._enableDepthTest();
         matrices.popPose();
     }

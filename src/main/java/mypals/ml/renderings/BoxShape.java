@@ -6,7 +6,8 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -38,18 +39,18 @@ public class BoxShape{
         Camera camera = client.gameRenderer.getMainCamera();
         if (camera.isInitialized() && client.getEntityRenderDispatcher().options != null && client.player != null) {
             matrices.pushPose();
-            double lastTickPosX = camera.getPosition().x();
-            double lastTickPosY = camera.getPosition().y();
-            double lastTickPosZ = camera.getPosition().z();
+            double lastTickPosX = camera.position().x();
+            double lastTickPosY = camera.position().y();
+            double lastTickPosZ = camera.position().z();
 
-            float x = (float) (pos.x() - Mth.lerp(tickDelta, lastTickPosX, camera.getPosition().x()));
-            float y = (float) (pos.y() - Mth.lerp(tickDelta, lastTickPosY, camera.getPosition().y()));
-            float z = (float) (pos.z() - Mth.lerp(tickDelta, lastTickPosZ, camera.getPosition().z()));
+            float x = (float) (pos.x() - Mth.lerp(tickDelta, lastTickPosX, camera.position().x()));
+            float y = (float) (pos.y() - Mth.lerp(tickDelta, lastTickPosY, camera.position().y()));
+            float z = (float) (pos.z() - Mth.lerp(tickDelta, lastTickPosZ, camera.position().z()));
 
             matrices.translate(x, y, z);
             Matrix4f modelViewMatrix = matrices.last().pose();
             Tesselator tessellator = Tesselator.getInstance();
-            BufferBuilder buffer = tessellator.begin(RenderType.debugQuads().mode(), RenderType.debugQuads().format());
+            BufferBuilder buffer = tessellator.begin(RenderTypes.debugQuads().mode(), RenderTypes.debugQuads().format());
 
             float xMin = -length / 2;
             float xMax = length / 2;
@@ -106,7 +107,7 @@ public class BoxShape{
             MeshData meshData = buffer.buildOrThrow();
             ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(64);
             meshData.sortQuads(byteBufferBuilder,VertexSorting.DISTANCE_TO_ORIGIN);
-            RenderType.debugQuads().draw(meshData);
+            RenderTypes.debugQuads().draw(meshData);
             GlStateManager._enableDepthTest();
             GlStateManager._enableCull();
             GlStateManager._disableBlend();

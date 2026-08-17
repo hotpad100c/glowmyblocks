@@ -1,8 +1,16 @@
 accessWidener v2 named
 
 
-accessible field net/minecraft/client/multiplayer/ClientPacketListener levelLoadStatusManager Lnet/minecraft/client/multiplayer/LevelLoadStatusManager;
+# 1.21.11: LevelLoadStatusManager was removed; ClientPacketListener now holds a LevelLoadTracker.
+accessible field net/minecraft/client/multiplayer/ClientPacketListener levelLoadTracker Lnet/minecraft/client/multiplayer/LevelLoadTracker;
 accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+
+# 1.21.11: RenderType is now a thin wrapper around a RenderSetup. GMBVertexBuffer mirrors
+# RenderType#draw for persistent GPU buffers, so it needs the same state the vanilla draw reads.
+accessible field net/minecraft/client/renderer/rendertype/RenderType state Lnet/minecraft/client/renderer/rendertype/RenderSetup;
+accessible field net/minecraft/client/renderer/rendertype/RenderSetup outputTarget Lnet/minecraft/client/renderer/rendertype/OutputTarget;
+accessible field net/minecraft/client/renderer/rendertype/RenderSetup textureTransform Lnet/minecraft/client/renderer/rendertype/TextureTransform;
+accessible field net/minecraft/client/renderer/rendertype/RenderSetup layeringTransform Lnet/minecraft/client/renderer/rendertype/LayeringTransform;
 
 #accessible field net/minecraft/client/render/Tessellator allocator Lnet/minecraft/client/util/BufferAllocator;
 #accessible field net/minecraft/client/util/BufferAllocator$CloseableBuffer clearCount I

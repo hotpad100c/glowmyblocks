@@ -4,7 +4,7 @@ import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.wandSystem.AreaBox;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -64,7 +64,7 @@ public class GlowModeManager {
                     blockIdString = "minecraft:" + blockIdString;
                 }
 
-                ResourceLocation blockId = ResourceLocation.parse(blockIdString);
+                Identifier blockId = Identifier.parse(blockIdString);
                 Block block = BuiltInRegistries.BLOCK.getValue(blockId);
 
                 Map<Property,Object> states = new HashMap<>();

@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -94,9 +95,12 @@ public class ColorPickerScreen extends Screen {
         context.fill(hueBarX - 2, indicatorY - 1, hueBarX + hueBarWidth + 2, indicatorY + 2, 0xFFFFFFFF);
     }
 
+    // 1.21.11 folds the x/y/button triple into a MouseButtonEvent record.
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() == 0) {
             if (mouseX >= pickerX && mouseX <= pickerX + pickerSize &&
                     mouseY >= pickerY && mouseY <= pickerY + pickerSize) {
                 draggingSV = true;
@@ -113,31 +117,31 @@ public class ColorPickerScreen extends Screen {
         }
         onColorSelected.accept(getCurrentColor());
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
         if (draggingSV) {
-            updateSVFromMouse(mouseX, mouseY);
+            updateSVFromMouse(event.x(), event.y());
             return true;
         }
 
         if (draggingHue) {
-            updateHueFromMouse(mouseY);
+            updateHueFromMouse(event.y());
             return true;
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return super.mouseDragged(event, deltaX, deltaY);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0) {
             draggingSV = false;
             draggingHue = false;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     private void updateSVFromMouse(double mouseX, double mouseY) {

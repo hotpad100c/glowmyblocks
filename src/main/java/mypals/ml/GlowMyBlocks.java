@@ -16,11 +16,12 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
@@ -43,8 +44,8 @@ public class GlowMyBlocks implements ModInitializer {
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static ResourceLocation id(String path) {
-		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+	public static Identifier id(String path) {
+		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}
 	public static void renderBlockOutlines(PoseStack stack, DeltaTracker counter, Matrix4f projectionMatrix) {
 		if(needRebuildOutlineMesh) {
@@ -58,8 +59,8 @@ public class GlowMyBlocks implements ModInitializer {
 			OutlineManager.buildMeshes(counter);
 		}
 		OutlineManager.renderBlocks(stack,counter, projectionMatrix);
-
-		OutlineManager.renderBlockEntities(stack,counter, projectionMatrix);
+		// Block entity glow is no longer drawn here: it rides along with vanilla's own submission
+		// in GlowMyBlocksBlockEntityOutlineMixin.
 	}
 	@Override
 	public void onInitialize() {
@@ -72,9 +73,12 @@ public class GlowMyBlocks implements ModInitializer {
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
 			updateConfig();
 		});
+		// 1.21.11 / fabric-rendering-v1 16.x: WorldRenderContext no longer carries the tick counter
+		// or projection matrix, so pull the tracker off the client instead.
 		WorldRenderEvents.AFTER_ENTITIES.register((context) ->{
-			renderBlockEntitiesOutlines(context.matrixStack(), context.tickCounter(), context.projectionMatrix());
-			GlowMyBlocksInformationRender.render(context.matrixStack(), context.tickCounter());
+			DeltaTracker tracker = Minecraft.getInstance().getDeltaTracker();
+			renderBlockEntitiesOutlines(context.matrices(), tracker, new Matrix4f());
+			GlowMyBlocksInformationRender.render(context.matrices(), tracker);
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			areaVbos.values().forEach(data -> {
@@ -83,6 +87,7 @@ public class GlowMyBlocks implements ModInitializer {
 				});
 			});
 			areaVbos.clear();
+			OutlineManager.refreshBlockEntityIndex();
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			ChunkDataBuilder.shutdown();
@@ -96,8 +101,8 @@ public class GlowMyBlocks implements ModInitializer {
 				client.setScreen(GlowMyBlocksScreenGenerator.getConfigScreen(client.screen));
 			}
 			if(!finishedLoadingWorld){
-				if(client.getConnection() != null && client.getConnection().levelLoadStatusManager != null){
-					if(client.getConnection().levelLoadStatusManager.levelReady()){
+				if(client.getConnection() != null && client.getConnection().levelLoadTracker != null){
+					if(client.getConnection().levelLoadTracker.isLevelReady()){
 						finishedLoadingWorld = true;
 						resolveSettings();
 						needRebuildOutlineMesh = true;
@@ -106,13 +111,13 @@ public class GlowMyBlocks implements ModInitializer {
 			}
 		});
 		UseBlockCallback.EVENT.register((player, world, hand, pos) -> {
-			if (world.isClientSide && player.getItemInHand(hand).getItem() == wand && player.isCreative()) {
+			if (world.isClientSide() && player.getItemInHand(hand).getItem() == wand && player.isCreative()) {
 				return InteractionResult.FAIL;
 			}
 			return InteractionResult.PASS;
 		});
 		AttackBlockCallback.EVENT.register((player, world, hand, pos, dir) -> {
-			if (world.isClientSide && player.getItemInHand(hand).getItem() == wand && player.isCreative()) {
+			if (world.isClientSide() && player.getItemInHand(hand).getItem() == wand && player.isCreative()) {
 				return InteractionResult.FAIL;
 			}
 			return InteractionResult.PASS;

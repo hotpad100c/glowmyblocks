@@ -11,6 +11,8 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -33,6 +35,23 @@ public class OutlineManager {
 
     public static Map<BlockPos, Color> blockToRenderer = new HashMap<>();
     public static ArrayList<BlockPos> targetedBlocks = new ArrayList<>();
+
+    /**
+     * The layer the outline meshes are built for and drawn with. Both sides must agree: since
+     * 1.21.6 the vertex layout comes from the layer's pipeline, and a mesh built with a different
+     * format draws nothing rather than erroring.
+     *
+     * <p>This is vanilla's own outline layer, which is what makes the meshes glow instead of
+     * showing up as flat geometry: it renders into {@code OutputTarget.OUTLINE_TARGET} with
+     * {@code OutlineProperty.IS_OUTLINE}, and the entity-outline post chain turns that buffer into
+     * the glow. It also already carries NO_DEPTH_TEST and no depth write, so outlines draw through
+     * walls for free -- no custom pipeline needed.
+     *
+     * <p>Its vertex format is {@code POSITION_TEX_COLOR}, which is what the mesh builder produces.
+     */
+    public static RenderType outlineLayer() {
+        return RenderTypes.outline(TextureAtlas.LOCATION_BLOCKS);
+    }
 
     public static Map<AreaBox, AreaRenderData> areaVbos = new ConcurrentHashMap<>();
 
@@ -59,16 +78,16 @@ public class OutlineManager {
 
         Minecraft mc = Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 cameraPos = camera.getPosition();
+        Vec3 cameraPos = camera.position();
 
-        GlStateManager._disableDepthTest();
-
+        // Drawing through walls is a property of the layer's pipeline now (see GMBRenderTypes),
+        // not of global GL state -- the GlStateManager depth toggles that used to wrap this loop
+        // have had no effect since 1.21.6.
         for (AreaRenderData areaData : areaVbos.values()) {
             for (ChunkRenderData chunk : areaData.sectionData.values()) {
                 if (chunk.vbo != null) renderAreaVbo(chunk.vbo, cameraPos);
             }
         }
-        GlStateManager._enableDepthTest();
 
 
         /*
@@ -81,27 +100,41 @@ public class OutlineManager {
         tempStack.scale(0.0f, 0.0f, 0.0f);
         Minecraft.getInstance().getBlockRenderer().renderBatched(Blocks.STONE.defaultBlockState(),
                 new BlockPos(0, 0, 0), Minecraft.getInstance().level,tempStack,
-                consumer.getBuffer(RenderType.outline(TextureAtlas.LOCATION_BLOCKS)),true,
+                consumer.getBuffer(RenderTypes.outline(TextureAtlas.LOCATION_BLOCKS)),true,
                 new ArrayList<>());
 
          */
     }
 
-    public static void renderBlockEntities(PoseStack stack, DeltaTracker counter, Matrix4f projectionMatrix) {
-        if (selectedAreas.isEmpty() && blockToRenderer.isEmpty()) return;
+    /**
+     * Flat position -> packed ARGB index of the block entities that should glow.
+     *
+     * <p>Read once per block entity per frame from {@code GlowMyBlocksBlockEntityOutlineMixin},
+     * so it is kept flat rather than walking {@link #areaVbos} section by section.
+     */
+    private static final Map<BlockPos, Integer> outlinedBlockEntities = new ConcurrentHashMap<>();
 
-        Minecraft mc = Minecraft.getInstance();
-        Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 cameraPos = camera.getPosition();
-
+    /** Rebuilds {@link #outlinedBlockEntities} from the current section data. */
+    public static void refreshBlockEntityIndex() {
+        outlinedBlockEntities.clear();
         for (AreaRenderData areaData : areaVbos.values()) {
             for (ChunkRenderData chunk : areaData.sectionData.values()) {
-                if (!chunk.blockEntities.isEmpty()) {
-                    renderAreaBlockEntities(stack, chunk.blockEntities, counter, cameraPos);
+                for (Map.Entry<BlockPos, Color> entry : chunk.blockEntities.entrySet()) {
+                    outlinedBlockEntities.put(entry.getKey(), entry.getValue().getRGB());
                 }
             }
         }
     }
+
+    /**
+     * The glow colour for the block entity at {@code pos}, or {@link #NO_OUTLINE} if it should
+     * render normally.
+     */
+    public static int outlineColorFor(BlockPos pos) {
+        return outlinedBlockEntities.getOrDefault(pos, NO_OUTLINE);
+    }
+
+    public static final int NO_OUTLINE = 0;
 
     private static void renderAreaVbo(GMBVertexBuffer vbo, Vec3 cameraPos) {
         RenderSystem.getModelViewStack().pushMatrix();
@@ -111,39 +144,11 @@ public class OutlineManager {
                 (float) -cameraPos.z
         );
 
-        //Minecraft.getInstance().levelRenderer.entityOutlineTarget().beginWrite(false);
-        //TODO
-        vbo.draw(RenderSystem.getModelViewStack(), Sheets.solidBlockSheet());
+        vbo.draw(outlineLayer());
 
         RenderSystem.getModelViewStack().popMatrix();
     }
 
-    private static void renderAreaBlockEntities(PoseStack stack, Map<BlockPos, Color> blockEntities,
-                                                DeltaTracker counter, Vec3 cameraPos) {
-        Minecraft mc = Minecraft.getInstance();
-        BlockEntityRenderDispatcher blockEntityRenderer = mc.getBlockEntityRenderDispatcher();
-        OutlineBufferSource outlineProvider = mc.levelRenderer.renderBuffers.outlineBufferSource();
-        float delta = counter.getGameTimeDeltaTicks();
-
-        for (Map.Entry<BlockPos, Color> entry : blockEntities.entrySet()) {
-            BlockPos blockPos = entry.getKey();
-            Color color = entry.getValue();
-
-            double x1 = blockPos.getX() - cameraPos.x;
-            double y1 = blockPos.getY() - cameraPos.y;
-            double z1 = blockPos.getZ() - cameraPos.z;
-
-            stack.pushPose();
-            stack.translate(x1, y1, z1);
-
-            outlineProvider.setColor(color.getRed(), color.getGreen(), color.getBlue(), 1);
-            BlockEntity blockEntity = mc.level.getBlockEntity(blockPos);
-            if (blockEntity != null) {
-                blockEntityRenderer.render(blockEntity, delta, stack, outlineProvider);
-            }
-            stack.popPose();
-        }
-    }
 
     public static boolean isBlockInsideArea(BlockPos pos, AreaBox area) {
         return pos.getX() >= area.minPos.getX() && pos.getX() <= area.maxPos.getX()
@@ -151,8 +156,13 @@ public class OutlineManager {
                 && pos.getZ() >= area.minPos.getZ() && pos.getZ() <= area.maxPos.getZ();
     }
 
+    /**
+     * @param visibleFaces bit per {@link net.minecraft.core.Direction#ordinal()}; faces whose bit
+     *                     is clear are hidden by another block of the same selection and skipped.
+     */
     static void renderBlockOutline(Map.Entry<BlockPos, BlockState> entry, float delta, Camera camera,
-                                   PoseStack matrixStack, Color color, RandomSource random,BufferBuilder bufferBuilder) {
+                                   PoseStack matrixStack, Color color, RandomSource random,
+                                   BufferBuilder bufferBuilder, int visibleFaces) {
         Minecraft mc = Minecraft.getInstance();
         BlockRenderDispatcher dispatcher = mc.getBlockRenderer();
         BlockPos blockPos = entry.getKey();
@@ -171,7 +181,8 @@ public class OutlineManager {
                     dispatcher.getBlockModel(blockState), blockState, blockPos, matrixStack,
                     bufferBuilder, random,
                     blockState.getSeed(blockPos),
-                    OverlayTexture.NO_OVERLAY, color.getRed(), color.getGreen(), color.getBlue());
+                    OverlayTexture.NO_OVERLAY, color.getRed(), color.getGreen(), color.getBlue(),
+                    visibleFaces);
         }
         matrixStack.popPose();
     }

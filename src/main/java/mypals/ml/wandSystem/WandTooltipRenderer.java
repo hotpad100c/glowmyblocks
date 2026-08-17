@@ -12,7 +12,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
 import static mypals.ml.GlowMyBlocks.MOD_ID;
@@ -29,14 +29,14 @@ public class WandTooltipRenderer {
         int color;
 
         @Nullable
-        ResourceLocation icon;
-        public ToolTipItem(String text, Color color, ResourceLocation icon) {
+        Identifier icon;
+        public ToolTipItem(String text, Color color, Identifier icon) {
             this.text = text;
             this.color = (color.getAlpha() << 24) | (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
             this.icon = icon;
         }
     }
-    public static void addTooltip(String text, Color color, ResourceLocation icon) {
+    public static void addTooltip(String text, Color color, Identifier icon) {
         hudItems.add(new ToolTipItem(text, color, icon));
     }
 
@@ -44,7 +44,7 @@ public class WandTooltipRenderer {
         hudItems.clear();
 
         TriConsumer<String,Color,String> addTooltip = (key, color, icon) ->
-                WandTooltipRenderer.addTooltip(Component.translatable(key).getString(), color, ResourceLocation.fromNamespaceAndPath(MOD_ID, icon));
+                WandTooltipRenderer.addTooltip(Component.translatable(key).getString(), color, Identifier.fromNamespaceAndPath(MOD_ID, icon));
 
         TriConsumer<KeyMapping,Color ,String> addKeyTooltip = (key,color, icon) ->
                 addTooltip.accept(Component.translatable(key.getName()).getString() + "(" + key.getTranslatedKeyMessage().getString() + ")", color, icon);
@@ -134,7 +134,7 @@ public class WandTooltipRenderer {
         int x = 0;
         int y = centerY - 60;
         GlStateManager._enableBlend();
-        context.blit(ResourceLocation.fromNamespaceAndPath(MOD_ID, currentGlowRenderMode.getIcon()), x, y, 0, 0, iconWidth, iconWidth, iconWidth, iconWidth);
+        context.blit(Identifier.fromNamespaceAndPath(MOD_ID, currentGlowRenderMode.getIcon()), x, y, 0, 0, iconWidth, iconWidth, iconWidth, iconWidth);
         GlStateManager._disableBlend();
         context.drawString(client.font, Component.translatable(currentGlowRenderMode.getTranslationKey()), x+iconWidth+2, y+(iconWidth/2), 0xFFFFFFE0, true);
 

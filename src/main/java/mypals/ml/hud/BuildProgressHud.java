@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
 public class BuildProgressHud {
@@ -18,9 +18,9 @@ public class BuildProgressHud {
     private static final long DISPLAY_AFTER_COMPLETE_MS = 1000;
     private static final long FADE_DURATION_MS = 2000;
     private static final Minecraft client = Minecraft.getInstance();
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.withDefaultNamespace("boss_bar/purple_background");
-    private static final ResourceLocation PROGRESS_TEXTURE = ResourceLocation.withDefaultNamespace("boss_bar/purple_progress");
-    private static final ResourceLocation NOTCHED_PROGRESS_TEXTURE = ResourceLocation.withDefaultNamespace("boss_bar/notched_20_progress");
+    private static final Identifier BACKGROUND_TEXTURE = Identifier.withDefaultNamespace("boss_bar/purple_background");
+    private static final Identifier PROGRESS_TEXTURE = Identifier.withDefaultNamespace("boss_bar/purple_progress");
+    private static final Identifier NOTCHED_PROGRESS_TEXTURE = Identifier.withDefaultNamespace("boss_bar/notched_20_progress");
     private static final int BAR_WIDTH = 182;
     private static final int BAR_HEIGHT = 5;
 

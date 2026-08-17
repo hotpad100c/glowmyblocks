@@ -3,7 +3,7 @@ package mypals.ml.wandSystem;
 import mypals.ml.config.GlowMyBlocksConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.Vec3;
@@ -27,7 +27,7 @@ public class SelectedManager {
         if (!name.contains(":")) {
             name = "minecraft:" + name;
         }
-        ResourceLocation id = ResourceLocation.parse(name);
+        Identifier id = Identifier.parse(name);
         Item nweWand = BuiltInRegistries.ITEM.getValue(id);
         if (nweWand == null) {
             wand = last_wind;
