@@ -16,7 +16,6 @@ import static mypals.ml.wandSystem.SelectedManager.selectedAreas;
 
 public class AreaColorKeyframeType implements KeyframeType<AreaColorKeyframe> {
 
-    /** Written into the replay project file; changing it orphans keyframes in existing projects. */
     public static final String ID = "glowmyblocks_area_color";
 
     public static final AreaColorKeyframeType INSTANCE = new AreaColorKeyframeType();
@@ -28,6 +27,10 @@ public class AreaColorKeyframeType implements KeyframeType<AreaColorKeyframe> {
         return AreaColorKeyframeChange.class;
     }
 
+    @Override
+    public boolean allowApplyingDuplicateKeyframeChanges(){
+        return true;
+    }
 
     @Override
     public boolean supportsHandler(KeyframeHandler keyframeHandler) {

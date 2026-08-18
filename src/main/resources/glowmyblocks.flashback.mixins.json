@@ -3,6 +3,7 @@
   "package": "mypals.ml.mixin.compat.flashback",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "FlashbackGsonMixin",
     "KeyframeTypeAdapterMixin"
   ],
   "injectors": {

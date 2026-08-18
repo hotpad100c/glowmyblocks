@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.moulberry.flashback.keyframe.Keyframe;
-import com.moulberry.flashback.keyframe.interpolation.InterpolationType;
 import mypals.ml.flashback.AreaColorKeyframe;
+import mypals.ml.flashback.AreaColorKeyframeSerializer;
 import mypals.ml.flashback.AreaColorKeyframeType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -16,6 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Type;
 
+/**
+ * Handles keyframes read and written explicitly as {@code Keyframe.class}; the runtime-type path is
+ * covered by the adapter {@link FlashbackGsonMixin} registers. Both share one implementation so the
+ * two formats cannot drift apart.
+ */
 @Pseudo
 @Mixin(Keyframe.TypeAdapter.class)
 public class KeyframeTypeAdapterMixin {
@@ -31,15 +36,7 @@ public class KeyframeTypeAdapterMixin {
         if (!(keyframe instanceof AreaColorKeyframe areaColorKeyframe)) {
             return;
         }
-        JsonObject json = new JsonObject();
-        json.addProperty("type", AreaColorKeyframeType.ID);
-        json.addProperty("area", areaColorKeyframe.areaKey);
-        json.addProperty("red", areaColorKeyframe.red);
-        json.addProperty("green", areaColorKeyframe.green);
-        json.addProperty("blue", areaColorKeyframe.blue);
-        json.addProperty("alpha", areaColorKeyframe.alpha);
-        json.add("interpolation_type", context.serialize(areaColorKeyframe.interpolationType()));
-        cir.setReturnValue(json);
+        cir.setReturnValue(AreaColorKeyframeSerializer.write(areaColorKeyframe, context));
     }
 
     @Inject(
@@ -54,19 +51,18 @@ public class KeyframeTypeAdapterMixin {
             return;
         }
         JsonObject json = element.getAsJsonObject();
-        if (!json.has("type") || !AreaColorKeyframeType.ID.equals(json.get("type").getAsString())) {
+        if (!json.has("type")) {
+            // Written reflectively back when the adapter was missing; recover it if we recognise it.
+            AreaColorKeyframe recovered = AreaColorKeyframeSerializer.readLegacyReflective(json, context);
+            if (recovered != null) {
+                cir.setReturnValue(recovered);
+            }
+            return;
+        }
+        if (!AreaColorKeyframeType.ID.equals(json.get("type").getAsString())) {
             return;
         }
 
-        String areaKey = json.has("area") ? json.get("area").getAsString() : "";
-        float red = json.has("red") ? json.get("red").getAsFloat() : 255.0f;
-        float green = json.has("green") ? json.get("green").getAsFloat() : 255.0f;
-        float blue = json.has("blue") ? json.get("blue").getAsFloat() : 255.0f;
-        float alpha = json.has("alpha") ? json.get("alpha").getAsFloat() : 255.0f;
-        InterpolationType interpolationType = json.has("interpolation_type")
-                ? context.deserialize(json.get("interpolation_type"), InterpolationType.class)
-                : InterpolationType.getDefault();
-
-        cir.setReturnValue(new AreaColorKeyframe(areaKey, red, green, blue, alpha, interpolationType));
+        cir.setReturnValue(AreaColorKeyframeSerializer.read(json, context));
     }
 }
