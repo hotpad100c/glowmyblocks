@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,9 +84,11 @@ public class OutlineManager {
         // Drawing through walls is a property of the layer's pipeline now (see GMBRenderTypes),
         // not of global GL state -- the GlStateManager depth toggles that used to wrap this loop
         // have had no effect since 1.21.6.
-        for (AreaRenderData areaData : areaVbos.values()) {
-            for (ChunkRenderData chunk : areaData.sectionData.values()) {
-                if (chunk.vbo != null) renderAreaVbo(chunk.vbo, cameraPos);
+        for (Map.Entry<AreaBox, AreaRenderData> entry : areaVbos.entrySet()) {
+            // Tint per area at draw time; the meshes themselves are white.
+            Vector4f tint = AreaColorOverrides.modulatorFor(entry.getKey());
+            for (ChunkRenderData chunk : entry.getValue().sectionData.values()) {
+                if (chunk.vbo != null) renderAreaVbo(chunk.vbo, cameraPos, tint);
             }
         }
 
@@ -136,7 +139,7 @@ public class OutlineManager {
 
     public static final int NO_OUTLINE = 0;
 
-    private static void renderAreaVbo(GMBVertexBuffer vbo, Vec3 cameraPos) {
+    private static void renderAreaVbo(GMBVertexBuffer vbo, Vec3 cameraPos, Vector4f tint) {
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().translate(
                 (float) -cameraPos.x,
@@ -144,7 +147,7 @@ public class OutlineManager {
                 (float) -cameraPos.z
         );
 
-        vbo.draw(outlineLayer());
+        vbo.draw(outlineLayer(), tint);
 
         RenderSystem.getModelViewStack().popMatrix();
     }

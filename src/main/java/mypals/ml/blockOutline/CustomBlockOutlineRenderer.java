@@ -16,6 +16,11 @@ import net.minecraft.world.phys.Vec3;
 
 public class CustomBlockOutlineRenderer {
     /**
+     * <p>Vertices are emitted white on purpose: the outline shader multiplies vertex colour by
+     * ColorModulator, and the area's colour is applied there at draw time so that recolouring
+     * (including keyframe animation) costs no mesh rebuild. The r/g/b parameters are kept for
+     * callers that still describe an area's colour but no longer affect the geometry.
+     *
      * @param visibleFaces bit per {@link Direction#ordinal()}. Direction-culled quads are only
      *                     emitted for faces whose bit is set, so interior faces between two
      *                     selected blocks cost nothing. Quads with no cull face (null direction)
@@ -34,11 +39,11 @@ public class CustomBlockOutlineRenderer {
                 for (Direction direction : Direction.values()){
                     if ((visibleFaces & (1 << direction.ordinal())) == 0) continue;
                     for(BakedQuad bakedQuad : quad.getQuads(direction)){
-                        vertexConsumer.putBulkData(matrices.last(), bakedQuad, new float[]{1, 1, 1, 1}, (float) r /255, (float) g /255, (float) b /255, 1.0F, new int[]{1, 1, 1, 1}, overlay);
+                        vertexConsumer.putBulkData(matrices.last(), bakedQuad, new float[]{1, 1, 1, 1}, 1.0F, 1.0F, 1.0F, 1.0F, new int[]{1, 1, 1, 1}, overlay);
                     }
                 }
                 for(BakedQuad bakedQuad : quad.getQuads(null)){
-                    vertexConsumer.putBulkData(matrices.last(), bakedQuad, new float[]{1, 1, 1, 1}, (float) r /255, (float) g /255, (float) b /255, 1.0F, new int[]{1, 1, 1, 1}, overlay);
+                    vertexConsumer.putBulkData(matrices.last(), bakedQuad, new float[]{1, 1, 1, 1}, 1.0F, 1.0F, 1.0F, 1.0F, new int[]{1, 1, 1, 1}, overlay);
                 }
             }
         }

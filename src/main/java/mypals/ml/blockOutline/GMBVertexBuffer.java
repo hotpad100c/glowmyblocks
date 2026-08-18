@@ -94,9 +94,15 @@ public class GMBVertexBuffer implements AutoCloseable {
     /**
      * Draws the buffered mesh with {@code renderType}, in the caller's current model-view state.
      *
-     * <p>This is {@link RenderType#draw(MeshData)} with the upload step hoisted out.
+     * <p>This is {@link RenderType#draw(MeshData)} with the upload step hoisted out, plus a caller
+     * supplied colour.
+     *
+     * <p>The outline shader computes {@code ColorModulator.rgb * vertexColor.rgb}, so meshes are
+     * built white and tinted here instead of baking the colour into the vertices. That keeps
+     * recolouring free -- no mesh rebuild -- which is what makes animating an area's colour
+     * viable.
      */
-    public void draw(RenderType renderType) {
+    public void draw(RenderType renderType, Vector4f colorModulator) {
         if (isClosed()) return;
 
         RenderSystem.assertOnRenderThread();
@@ -116,7 +122,7 @@ public class GMBVertexBuffer implements AutoCloseable {
         try {
             GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
                     RenderSystem.getModelViewMatrix(),
-                    new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
+                    colorModulator,
                     new Vector3f(),
                     setup.textureTransform.getMatrix()
             );

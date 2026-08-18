@@ -24,17 +24,27 @@
   "key.blockOutline.addSelection": "添加选区",
   "key.blockOutline.config": "开启设置GUI",
   "key.blockOutline.removeSelection": "切除选区",
-
-
   "config.wand.holdSprint": "疾跑按键 + 滚轮：切换模式",
   "config.wand.switchMode": "滚轮：选择模式",
-  "config.blockOutline.render_mode":"高亮模式",
+  "config.blockOutline.render_mode": "高亮模式",
   "config.blockOutline.render_mode.off": "关闭",
   "config.blockOutline.render_mode.render_inside_exclude": "高亮选区内排除特定内容",
   "config.blockOutline.render_mode.render_inside_include": "高亮选区内特定内容",
   "config.blockOutline.render_mode.render_inside_all": "高亮选区内所有内容",
-
   "hint.uploading": "§a上传模型至GPU...",
   "hint.building": "构建中 - ",
-  "hint.progress": "%s / %s 方块 | %s 方块每秒"
+  "hint.progress": "%s / %s 方块 | %s 方块每秒",
+  "key.blockOutline.area_manager": "打开选区管理",
+  "gui.glowmyblocks.areas.title": "选区管理",
+  "gui.glowmyblocks.areas.count": "已选 %s 个",
+  "gui.glowmyblocks.areas.empty": "还没有选区",
+  "gui.glowmyblocks.areas.empty_hint": "用手杖选取两个角点后确认添加",
+  "gui.glowmyblocks.areas.clear_all": "清空全部",
+  "gui.glowmyblocks.areas.confirm_delete": "再点一次",
+  "gui.glowmyblocks.color.title": "选择颜色",
+  "glowmyblocks.flashback.keyframe.area_color": "发光选区颜色",
+  "glowmyblocks.flashback.area_color": "颜色",
+  "glowmyblocks.flashback.area": "选区",
+  "glowmyblocks.flashback.pick_area": "选择一个选区…",
+  "glowmyblocks.flashback.no_areas": "当前没有任何选区"
 }

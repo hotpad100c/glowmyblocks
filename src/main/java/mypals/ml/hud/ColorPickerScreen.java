@@ -58,10 +58,36 @@ public class ColorPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        // Panel styling matches AreaManagerScreen, which is where this screen is opened from.
+        context.fill(0, 0, this.width, this.height, 0xB4000000);
+
+        int panelX = pickerX - 20;
+        int panelY = pickerY - 44;
+        int panelW = (hueBarX + hueBarWidth + 20) - panelX;
+        int panelH = (pickerY + pickerSize + 46) - panelY;
+
+        context.fill(panelX + 1, panelY, panelX + panelW - 1, panelY + panelH, 0xF01A1A20);
+        context.fill(panelX, panelY + 1, panelX + 1, panelY + panelH - 1, 0xF01A1A20);
+        context.fill(panelX + panelW - 1, panelY + 1, panelX + panelW, panelY + panelH - 1, 0xF01A1A20);
+        context.renderOutline(panelX, panelY, panelW, panelH, 0x30FFFFFF);
+        context.fill(panelX + 1, panelY + 1, panelX + panelW - 1, panelY + 26, 0x24FFFFFF);
+
+        context.drawString(this.font, Component.translatable("gui.glowmyblocks.color.title"),
+                panelX + 12, panelY + 9, 0xFFF0F0F5, false);
+
         renderSVPicker(context);
         renderHueBar(context);
-        context.drawCenteredString(this.font, this.title,
-                this.width / 2, 20, 0xFFFFFF);
+
+        // Live preview of the picked colour plus its hex, so the value is readable, not just visible.
+        Color current = getCurrentColor();
+        int swatchY = pickerY + pickerSize + 10;
+        context.fill(pickerX, swatchY, pickerX + 22, swatchY + 16, 0xFF000000 | current.getRGB());
+        context.renderOutline(pickerX - 1, swatchY - 1, 24, 18, 0x60FFFFFF);
+        context.drawString(this.font,
+                String.format("#%06X", current.getRGB() & 0xFFFFFF),
+                pickerX + 30, swatchY + 4, 0xFF9A9AA8, false);
+
+        super.render(context, mouseX, mouseY, delta);
     }
 
     private void renderSVPicker(GuiGraphics context) {
@@ -115,7 +141,6 @@ public class ColorPickerScreen extends Screen {
                 return true;
             }
         }
-        onColorSelected.accept(getCurrentColor());
 
         return super.mouseClicked(event, doubleClick);
     }
@@ -138,8 +163,14 @@ public class ColorPickerScreen extends Screen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (event.button() == 0) {
+            // Commit once the drag ends. Applying per-frame while dragging would kick off a full
+            // outline mesh rebuild on every mouse move.
+            boolean wasDragging = draggingSV || draggingHue;
             draggingSV = false;
             draggingHue = false;
+            if (wasDragging) {
+                onColorSelected.accept(getCurrentColor());
+            }
         }
         return super.mouseReleased(event);
     }

@@ -24,6 +24,12 @@ repositories {
 	maven {
 		url "https://maven.parchmentmc.org/"
 	}
+	exclusiveContent {
+		forRepository {
+			maven { url = "https://api.modrinth.com/maven" }
+		}
+		filter { includeGroup "maven.modrinth" }
+	}
 }
 
 dependencies {
@@ -33,6 +39,10 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// Optional integration: compiled against, never required at runtime. Everything that touches
+	// com.moulberry.* is behind a mod-loaded check so the classes are only reached with it present.
+	modCompileOnly "maven.modrinth:flashback:${project.flashback_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"

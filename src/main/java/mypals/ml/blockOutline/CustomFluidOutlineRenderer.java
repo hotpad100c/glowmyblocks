@@ -63,6 +63,7 @@ public class CustomFluidOutlineRenderer {
     public static void render(Level world, BlockPos pos, BufferBuilder vertexConsumer,
                               BlockState blockState, FluidState fluidState, PoseStack matrixStack,
                               float r, float g, float b) {
+        r = 255.0F; g = 255.0F; b = 255.0F;
         TextureAtlasSprite[] lavaSprites = new TextureAtlasSprite[2];
         TextureAtlasSprite[] waterSprites = new TextureAtlasSprite[2];
 

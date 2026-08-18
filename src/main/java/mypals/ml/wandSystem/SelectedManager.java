@@ -93,4 +93,25 @@ public class SelectedManager {
                 areaBox.minPos.getY() <= pos.y() && pos.y() <= areaBox.maxPos.getY() &&
                 areaBox.minPos.getZ() <= pos.z() && pos.z() <= areaBox.maxPos.getZ();
     }
+
+    /** Serialises one area into the "x1,y1,z1:x2,y2,z2:rgb" form used by the config file. */
+    public static String serialize(AreaBox area) {
+        return area.minPos.getX() + "," + area.minPos.getY() + "," + area.minPos.getZ() + ":"
+                + area.maxPos.getX() + "," + area.maxPos.getY() + "," + area.maxPos.getZ() + ":"
+                + area.color.getRGB();
+    }
+
+    /**
+     * Rewrites the saved area list from the in-game one and saves the config.
+     *
+     * <p>The older edit paths removed from {@code selectedAreasSaved} by the index of the area in
+     * {@code selectedAreas}, which drifts apart as soon as one of the two lists changes on its own.
+     * Rewriting wholesale keeps the two in step by construction.
+     */
+    public static void persistAreas() {
+        GlowMyBlocksConfig.CONFIG_HANDLER.instance();
+        GlowMyBlocksConfig.selectedAreasSaved.clear();
+        selectedAreas.forEach(area -> GlowMyBlocksConfig.selectedAreasSaved.add(serialize(area)));
+        GlowMyBlocksConfig.CONFIG_HANDLER.save();
+    }
 }

@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "package": "mypals.ml.mixin.compat.flashback",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "KeyframeTypeAdapterMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

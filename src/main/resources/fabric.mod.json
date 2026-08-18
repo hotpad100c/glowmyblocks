@@ -1,38 +1,40 @@
 {
-	"schemaVersion": 1,
-	"id": "glowmyblocks",
-	"version": "${version}",
-	"name": "GlowMyBlocks",
-	"description": "Let your blocks glow!",
-	"accessWidener": "glowmyblocks.accesswidener",
-	"authors": [
-		"Ryan100c"
-	],
-	"contact": {
-		"homepage": "",
-		"sources": "https://github.com/hotpad100c/glowmyblocks"
-	},
-	"license": "CC0-1.0",
-	"icon": "assets/glowmyblocks/icon.png",
-	"environment": "*",
-	"entrypoints": {
-		"main": [
-			"mypals.ml.GlowMyBlocks"
-		],"modmenu": [
-			"mypals.ml.config.GlowMyBlocksModMenuIntegration"
-		]
-	},
-	"mixins": [
-		"glowmyblocks.mixins.json"
-	],
-	"depends": {
-		"fabricloader": "*",
-		"yet_another_config_lib_v3": "*",
-		"minecraft": "~1.21.11",
-		"java": ">=21",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
-	}
+  "schemaVersion": 1,
+  "id": "glowmyblocks",
+  "version": "${version}",
+  "name": "GlowMyBlocks",
+  "description": "Let your blocks glow!",
+  "accessWidener": "glowmyblocks.accesswidener",
+  "authors": [
+    "Ryan100c"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": "https://github.com/hotpad100c/glowmyblocks"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/glowmyblocks/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "mypals.ml.GlowMyBlocks"
+    ],
+    "modmenu": [
+      "mypals.ml.config.GlowMyBlocksModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "glowmyblocks.mixins.json",
+    "glowmyblocks.flashback.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "*",
+    "yet_another_config_lib_v3": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "flashback": "*"
+  }
 }

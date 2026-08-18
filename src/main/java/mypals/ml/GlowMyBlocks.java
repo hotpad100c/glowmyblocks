@@ -1,11 +1,14 @@
 package mypals.ml;
 
+import mypals.ml.blockOutline.AreaColorOverrides;
 import mypals.ml.blockOutline.ChunkDataBuilder;
 import mypals.ml.blockOutline.OutlineManager;
 import mypals.ml.config.GlowMyBlocksConfig;
 import mypals.ml.config.GlowMyBlocksKeybinds;
 import mypals.ml.config.GlowMyBlocksScreenGenerator;
 import mypals.ml.hud.BuildProgressHud;
+import mypals.ml.flashback.FlashbackCompat;
+import mypals.ml.hud.AreaManagerScreen;
 import mypals.ml.hud.ColorPickerScreen;
 import mypals.ml.renderings.GlowMyBlocksInformationRender;
 import mypals.ml.wandSystem.SelectedManager;
@@ -30,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import static mypals.ml.blockOutline.OutlineManager.areaVbos;
 import static mypals.ml.config.GlowModeManager.resolveSelectedBlockStatesFromString;
 import static mypals.ml.config.GlowMyBlocksKeybinds.openColorPickerKey;
+import static mypals.ml.config.GlowMyBlocksKeybinds.openAreaManagerKey;
 import static mypals.ml.config.GlowMyBlocksKeybinds.openConfigKey;
 import static mypals.ml.wandSystem.SelectedManager.*;
 import static mypals.ml.wandSystem.WandActionsManager.wandActions;
@@ -65,6 +69,7 @@ public class GlowMyBlocks implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		GlowMyBlocksKeybinds.init();
+		FlashbackCompat.init();
 		needRebuildOutlineMesh = true;
 		HudRenderCallback.EVENT.register((context, tickDelta) -> {
 			WandTooltipRenderer.renderWandTooltip(context);
@@ -88,6 +93,9 @@ public class GlowMyBlocks implements ModInitializer {
 			});
 			areaVbos.clear();
 			OutlineManager.refreshBlockEntityIndex();
+			// Keyframe-driven colours are transient; leaving them set would tint areas in the next
+			// world with values from a replay.
+			AreaColorOverrides.clearAll();
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			ChunkDataBuilder.shutdown();
@@ -99,6 +107,9 @@ public class GlowMyBlocks implements ModInitializer {
 			wandActions(client);
 			while (openConfigKey.consumeClick()) {
 				client.setScreen(GlowMyBlocksScreenGenerator.getConfigScreen(client.screen));
+			}
+			while (openAreaManagerKey.consumeClick()) {
+				client.setScreen(new AreaManagerScreen(client.screen));
 			}
 			if(!finishedLoadingWorld){
 				if(client.getConnection() != null && client.getConnection().levelLoadTracker != null){

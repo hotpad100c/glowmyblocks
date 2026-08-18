@@ -14,6 +14,7 @@ public class GlowMyBlocksKeybinds {
     public static KeyMapping deleteOutlineArea;
     public static KeyMapping openConfigKey;
     public static KeyMapping openColorPickerKey;
+    public static KeyMapping openAreaManagerKey;
 
     // 1.21.11: KeyMapping takes a KeyMapping.Category instead of a translation-key String.
     // The category's label is looked up as "key.categories.<namespace>.<path>".
@@ -37,6 +38,13 @@ public class GlowMyBlocksKeybinds {
                 "key.blockOutline.removeSelection",
                 InputConstants.Type.KEYSYM,
                 GLFW_KEY_RIGHT_CONTROL,
+                CATEGORY
+        ));
+
+        openAreaManagerKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.blockOutline.area_manager",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_F9,
                 CATEGORY
         ));
 
